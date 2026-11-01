@@ -200,7 +200,35 @@ async function editVehicle(id){const v=(await request("/vehicles")).find(x=>x.id
 async function removeVehicle(id){if(!confirm("Delete this vehicle record?"))return;try{await request("/vehicles/"+id,{method:"DELETE"});toast("Vehicle deleted.");renderPage()}catch(e){toast(e.message)}}
 function openSlotModal(){openModal("Add parking slot",[{name:"code",label:"Slot code",placeholder:"e.g. A21"},{name:"zone",label:"Parking zone",value:"Block A"},{name:"slot_type",label:"Slot type",options:["car","bike","suv"].map(x=>({value:x,label:x.toUpperCase()}))}],d=>request("/slots",{method:"POST",body:JSON.stringify(d)}))}
 function slotInfo(id){const s=slotsCache.find(x=>x.id===id);if(!s)return;const msg=`${s.code} · ${s.zone}\nStatus: ${s.status}\nType: ${s.slot_type}`;if(s.status==="available"&&confirm(msg+"\n\nDelete this slot?"))request("/slots/"+id,{method:"DELETE"}).then(()=>{toast("Slot deleted.");renderPage()}).catch(e=>toast(e.message));else toast(msg.replace(/\n/g," · "))}
-function openCheckIn(){openModal("Check in vehicle",[{name:"vehicle_number",label:"Vehicle registration",placeholder:"DL10AB1234"},{name:"slot_code",label:"Select slot",options:slotsCache.filter(s=>s.status==="available"||s.status==="reserved").map(s=>({value:s.code,label:s.code+" · "+s.zone+(s.status==="reserved"?" (Reserved)":" (Available)"))}))}],d=>request("/check-in?"+new URLSearchParams(d),{method:"POST"}))}
+
+function openCheckIn() {
+    openModal(
+        "Check in vehicle",
+        [
+            {
+                name: "vehicle_number",
+                label: "Vehicle registration",
+                placeholder: "DL10AB1234"
+            },
+            {
+                name: "slot_code",
+                label: "Select slot",
+                options: slotsCache
+                    .filter(s => s.status === "available" || s.status === "reserved")
+                    .map(s => ({
+                        value: s.code,
+                        label: s.code + " · " + s.zone +
+                            (s.status === "reserved" ? " (Reserved)" : " (Available)")
+                    }))
+            }
+        ],
+        d => request(
+            "/check-in?" + new URLSearchParams(d),
+            { method: "POST" }
+        )
+    );
+}
+
 async function checkout(id){if(!confirm("Confirm vehicle checkout?"))return;try{const r=await request("/check-out/"+id,{method:"POST"});toast(`Checkout complete · ${money(r.amount)}`);renderPage()}catch(e){toast(e.message)}}
 async function openBookingModal(){const slots=await request("/slots");openModal("Create parking booking",[{name:"vehicle_number",label:"Vehicle number"},{name:"customer_name",label:"Customer name"},{name:"slot_id",label:"Parking slot",options:slots.map(s=>({value:s.id,label:s.code+" ("+s.status+")"}))},{name:"start_time",label:"Start time",type:"datetime-local"},{name:"end_time",label:"End time",type:"datetime-local"}],d=>request("/bookings",{method:"POST",body:JSON.stringify({...d,slot_id:Number(d.slot_id),start_time:new Date(d.start_time).toISOString(),end_time:new Date(d.end_time).toISOString()})}))}
 function downloadCSV(){request("/sessions").then(rows=>{const cols=["vehicle","owner","slot","entry_time","exit_time","amount","status"];const csv=[cols.join(","),...rows.map(r=>cols.map(k=>JSON.stringify(r[k]??"")).join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="parkwise-sessions.csv";a.click();URL.revokeObjectURL(a.href)})}
