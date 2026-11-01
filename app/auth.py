@@ -2,7 +2,7 @@
 
 import os
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,6 +11,30 @@ from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import User
+
+
+# ---------------------------------------------------------------------------
+# Datetime Utilities for Timezone Safety & Compatibility
+# ---------------------------------------------------------------------------
+
+
+def to_utc_naive(dt: datetime | None) -> datetime | None:
+    """Normalize any datetime (aware or naive) into a naive UTC datetime."""
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+def format_utc_iso(dt: datetime | None) -> str | None:
+    """Format a naive UTC datetime into an ISO 8601 string ending with 'Z'."""
+    if dt is None:
+        return None
+    iso = dt.isoformat()
+    if not iso.endswith("Z") and "+" not in iso:
+        iso += "Z"
+    return iso
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -58,7 +82,7 @@ def hash_password(password: str) -> str:
 def create_access_token(data: dict) -> str:
     """Create a signed JWT containing *data* with an expiration claim."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
 

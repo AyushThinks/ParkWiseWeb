@@ -1235,9 +1235,9 @@
         </main>
     </div>
 
-    <!-- ===== Modal ===== -->
+    <!-- ===== Booking Modal ===== -->
     <div class="modal-backdrop" id="modal">
-        <div class="modal" id="modalContent">
+        <div class="modal">
             <div class="modal-head">
                 <div>
                     <div class="eyebrow">PARKWISE</div>
@@ -1249,9 +1249,26 @@
                 <div id="modalFields" class="form-grid"></div>
                 <div class="modal-actions">
                     <button type="button" class="secondary-btn" id="cancelModal">Cancel</button>
-                    <button class="primary-btn" type="submit">Confirm Booking</button>
+                    <button class="primary-btn" type="submit" id="modalSubmitBtn">Confirm Booking</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ===== Confirmation Modal ===== -->
+    <div class="modal-backdrop" id="confirmModal">
+        <div class="modal">
+            <div class="confirm-dialog" style="text-align:center;padding:12px 6px;">
+                <div style="font-size:38px;margin-bottom:12px">⚠️</div>
+                <h2 id="confirmTitle" style="font-size:20px;margin-bottom:10px">Cancel Booking?</h2>
+                <p id="confirmMessage" class="muted" style="margin-bottom:22px">
+                    Are you sure you want to cancel this booking? This action cannot be undone.
+                </p>
+                <div class="confirm-actions" style="display:flex;justify-content:center;gap:12px">
+                    <button type="button" class="secondary-btn" id="confirmCloseBtn">Keep Booking</button>
+                    <button type="button" class="danger-btn" id="confirmActionBtn" style="padding:11px 20px;font-size:13px">Yes, Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1279,6 +1296,30 @@
         const $$ = (s) => document.querySelectorAll(s);
 
         /**
+         * Extract human-readable error message from backend error responses
+         */
+        function extractErrorMessage(data, fallback = 'Something went wrong.') {
+            if (!data) return fallback;
+            if (typeof data === 'string') return data;
+            if (data.detail) {
+                if (typeof data.detail === 'string') return data.detail;
+                if (Array.isArray(data.detail)) {
+                    return data.detail.map(item => {
+                        const field = Array.isArray(item.loc) ? item.loc.slice(1).join(' ') : '';
+                        const msg = item.msg || item.message || JSON.stringify(item);
+                        return field ? `${field}: ${msg}` : msg;
+                    }).join('; ');
+                }
+                if (typeof data.detail === 'object') {
+                    return JSON.stringify(data.detail);
+                }
+            }
+            if (data.message) return data.message;
+            if (data.error) return data.error;
+            return fallback;
+        }
+
+        /**
          * API request helper with auth and error handling
          */
         async function request(path, options = {}) {
@@ -1286,21 +1327,28 @@
             const headers = {
                 'Content-Type': 'application/json',
                 ...(tkn ? { 'Authorization': `Bearer ${tkn}` } : {}),
+                ...(options.headers || {})
             };
-            const res = await fetch('/api' + path, { headers, ...options });
+            const res = await fetch('/api' + path, { ...options, headers });
 
             if (res.status === 401) {
                 localStorage.removeItem('access_token');
+                localStorage.removeItem('user');
                 window.location.href = '/login.html';
-                return;
+                return null;
             }
 
             if (!res.ok) {
                 let msg = 'Something went wrong.';
                 try {
                     const d = await res.json();
-                    msg = d.detail || msg;
-                } catch {}
+                    msg = extractErrorMessage(d, msg);
+                } catch {
+                    try {
+                        const txt = await res.text();
+                        if (txt && txt.length < 200) msg = txt;
+                    } catch {}
+                }
                 throw new Error(msg);
             }
 
@@ -1315,7 +1363,7 @@
             const t = $('#toast');
             t.textContent = message;
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2800);
+            setTimeout(() => t.classList.remove('show'), 3500);
         }
 
         /**
@@ -1338,6 +1386,7 @@
         function formatDateTime(iso) {
             if (!iso) return '—';
             const d = new Date(iso);
+            if (isNaN(d.getTime())) return String(iso);
             return d.toLocaleString([], {
                 year: 'numeric',
                 month: 'short',
@@ -1353,6 +1402,7 @@
         function formatDateShort(iso) {
             if (!iso) return '—';
             const d = new Date(iso);
+            if (isNaN(d.getTime())) return String(iso);
             return d.toLocaleDateString([], {
                 month: 'short',
                 day: 'numeric'
@@ -1367,6 +1417,15 @@
          */
         function nowLocal() {
             const d = new Date();
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16);
+        }
+
+        /**
+         * Get "hours from now" as a datetime-local input value
+         */
+        function hoursFromNowLocal(hours = 2) {
+            const d = new Date(Date.now() + hours * 3600000);
             d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
             return d.toISOString().slice(0, 16);
         }

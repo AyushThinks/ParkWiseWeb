@@ -1,7 +1,7 @@
 """FastAPI application for the ParkWise parking management system."""
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +11,7 @@ from sqlalchemy import Date, cast, func
 from sqlalchemy.orm import Session, joinedload
 
 from . import models, schemas
-from .auth import get_current_user, require_admin
+from .auth import format_utc_iso, get_current_user, require_admin, to_utc_naive
 from .database import Base, engine, get_db, run_migrations
 from .routes import auth_routes, customer_routes
 
@@ -67,7 +67,7 @@ def get_dashboard(
         models.ParkingSession.status == "active"
     ).count()
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     today_revenue = db.query(
         func.coalesce(func.sum(models.ParkingSession.amount), 0)
     ).filter(
@@ -109,7 +109,7 @@ def get_dashboard(
                     if item.vehicle else "Unknown Owner"
                 ),
                 "slot": item.slot.code if item.slot else "Unknown Slot",
-                "entry_time": item.entry_time.isoformat(),
+                "entry_time": format_utc_iso(item.entry_time),
                 "status": item.status,
             }
             for item in recent_sessions
@@ -430,7 +430,7 @@ def check_out_vehicle(
     if parking_session.status != "active":
         raise HTTPException(409, "This parking session is already closed.")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     duration_hours = max(
         1,
         (now - parking_session.entry_time).total_seconds() / 3600,
@@ -486,11 +486,8 @@ def list_sessions(
                 if item.vehicle else "Unknown Owner"
             ),
             "slot": item.slot.code if item.slot else "Unknown Slot",
-            "entry_time": item.entry_time.isoformat(),
-            "exit_time": (
-                item.exit_time.isoformat()
-                if item.exit_time else None
-            ),
+            "entry_time": format_utc_iso(item.entry_time),
+            "exit_time": format_utc_iso(item.exit_time),
             "amount": item.amount,
             "status": item.status,
         }
@@ -519,8 +516,8 @@ def list_bookings(
             "vehicle_number": item.vehicle_number,
             "customer_name": item.customer_name,
             "slot_id": item.slot_id,
-            "start_time": item.start_time.isoformat(),
-            "end_time": item.end_time.isoformat(),
+            "start_time": format_utc_iso(item.start_time),
+            "end_time": format_utc_iso(item.end_time),
             "status": item.status,
         }
         for item in bookings
@@ -538,6 +535,12 @@ def create_booking(
     db: Session = Depends(get_db),
 ):
     """Create a reservation from Admin panel (Admin only)."""
+    start_utc = to_utc_naive(data.start_time)
+    end_utc = to_utc_naive(data.end_time)
+
+    if end_utc <= start_utc:
+        raise HTTPException(422, "End time must be after start time.")
+
     vehicle = db.query(models.Vehicle).filter(
         models.Vehicle.registration_number == data.vehicle_number
     ).first()
@@ -548,14 +551,11 @@ def create_booking(
     if not slot:
         raise HTTPException(404, "Parking slot not found.")
 
-    if data.end_time <= data.start_time:
-        raise HTTPException(422, "End time must be after start time.")
-
     overlapping_booking = db.query(models.Booking).filter(
         models.Booking.slot_id == data.slot_id,
         models.Booking.status == "confirmed",
-        models.Booking.start_time < data.end_time,
-        models.Booking.end_time > data.start_time,
+        models.Booking.start_time < end_utc,
+        models.Booking.end_time > start_utc,
     ).first()
 
     if overlapping_booking:
@@ -564,15 +564,29 @@ def create_booking(
             "This slot is already booked during the selected time.",
         )
 
-    booking = models.Booking(**data.model_dump())
-    db.add(booking)
-    db.commit()
-    db.refresh(booking)
+    try:
+        booking = models.Booking(
+            vehicle_number=data.vehicle_number,
+            customer_name=data.customer_name,
+            slot_id=data.slot_id,
+            start_time=start_utc,
+            end_time=end_utc,
+            status="confirmed",
+        )
+        db.add(booking)
+        db.commit()
+        db.refresh(booking)
 
-    return {
-        "message": "Booking created successfully.",
-        "booking_id": booking.id,
-    }
+        return {
+            "message": "Booking created successfully.",
+            "booking_id": booking.id,
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(500, f"Failed to create booking: {str(exc)}")
 
 
 # ---------------------------------------------------------------------------
