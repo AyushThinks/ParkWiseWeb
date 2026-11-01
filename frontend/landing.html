@@ -391,8 +391,10 @@
 
         <div class="nav-actions">
             <button class="theme-btn" id="themeToggle" title="Toggle theme">🌙</button>
-            <a href="/login.html" class="btn-outline">Sign In</a>
-            <a href="/signup.html" class="btn-primary">Create Account</a>
+            <a href="/login.html" class="btn-outline" id="navSignIn">Sign In</a>
+            <a href="/signup.html" class="btn-primary" id="navSignUp">Create Account</a>
+            <a href="#" class="btn-primary" id="navDashboard" style="display:none">Dashboard →</a>
+            <button class="btn-outline" id="navSignOut" style="display:none; color:#ef6377; border-color:#ef637744">Sign Out</button>
         </div>
     </nav>
 
@@ -493,23 +495,29 @@
             localStorage.setItem('parkwise-theme', isDark ? 'dark' : 'light');
         });
 
-        // If user already has an active session, update header link
+        function logoutUser() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            window.location.reload();
+        }
+
+        // Show session shortcuts without hiding Sign In
         const token = localStorage.getItem('access_token');
         const userStr = localStorage.getItem('user');
         if (token && userStr) {
             try {
                 const user = JSON.parse(userStr);
                 const target = user.role === 'ADMIN' ? '/index.html' : '/customer';
-                const actions = document.querySelector('.nav-actions');
-                actions.innerHTML = `
-                    <button class="theme-btn" id="themeToggle2" title="Toggle theme">${document.body.classList.contains('dark') ? '☀️' : '🌙'}</button>
-                    <a href="${target}" class="btn-primary">Go to Dashboard (${user.role}) →</a>
-                `;
-                document.getElementById('themeToggle2').addEventListener('click', () => {
-                    document.body.classList.toggle('dark');
-                    const isDark = document.body.classList.contains('dark');
-                    localStorage.setItem('parkwise-theme', isDark ? 'dark' : 'light');
-                });
+                const dash = document.getElementById('navDashboard');
+                const signout = document.getElementById('navSignOut');
+                if (dash && signout) {
+                    dash.href = target;
+                    dash.textContent = `Dashboard (${user.role}) →`;
+                    dash.style.display = 'inline-block';
+                    signout.style.display = 'inline-block';
+                    signout.onclick = logoutUser;
+                }
             } catch {}
         }
     </script>

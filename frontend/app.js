@@ -92,17 +92,19 @@ function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;",
 async function renderDashboard(root){
  const [d,slots,sessions]=await Promise.all([request("/dashboard"),request("/slots"),request("/sessions")]); slotsCache=slots;sessionsCache=sessions;
  const pct=d.total_slots?d.occupancy_percent:0;
+ const reservedCount = d.reserved_slots || 0;
  root.innerHTML=`
  <div class="stats">
   ${stat("▣",d.total_vehicles,"Registered vehicles","Across all vehicle types","#e9f3ff","#2688e8")}
   ${stat("P",d.occupied_slots,"Occupied slots",`${pct}% facility occupancy`,"#e7f9ef","#1db477")}
-  ${stat("▤",d.available_slots,"Available slots","Ready for incoming vehicles","#f0eaff","#8055e8")}
+  ${stat("▤",d.available_slots,"Available slots",reservedCount > 0 ? `${reservedCount} slot(s) reserved` : "Ready for incoming vehicles","#f0eaff","#8055e8")}
   ${stat("₹",money(d.today_revenue),"Today's revenue","Completed parking sessions","#fff2e5","#e89a32")}
  </div>
  <div class="content-grid">
   <section class="panel"><div class="panel-head"><h3>Parking occupancy</h3><span class="muted">Live overview</span></div>
    <div class="occupancy"><div class="donut" style="--percent:${pct}%"><div class="donut-inner"><b>${pct}%</b><small>Occupied</small></div></div><div class="legend">
     <div class="legend-row"><span class="legend-label"><i class="dot" style="background:#6855e8"></i>Occupied</span><b>${d.occupied_slots}</b></div>
+    <div class="legend-row"><span class="legend-label"><i class="dot" style="background:#e8b04b"></i>Reserved</span><b>${reservedCount}</b></div>
     <div class="legend-row"><span class="legend-label"><i class="dot" style="background:#e9e9f4"></i>Available</span><b>${d.available_slots}</b></div><hr style="border:0;border-top:1px solid var(--line);width:100%"><div class="legend-row"><span class="legend-label">Total capacity</span><b>${d.total_slots}</b></div>
    </div></div>
   </section>
@@ -116,10 +118,34 @@ async function renderDashboard(root){
  </div>
  <div class="lower-grid">
   <section class="panel"><div class="panel-head"><h3>Parking lot · Block A</h3><div class="slot-legend"><span><i style="background:#20b978"></i>Available</span><span><i style="background:#8065ed"></i>Occupied</span><span><i style="background:#e8b04b"></i>Reserved</span></div></div><div class="slot-grid">
-   ${slots.slice(0,20).map(s=>`<button class="slot ${s.status}" title="${s.zone} · ${s.status}" onclick="setPage('slots')">${escapeHtml(s.code)}</button>`).join("")||'<div class="empty">No slots added yet.</div>'}
+   ${slots.slice(0,20).map(s=>`<button class="slot ${s.status}" title="${s.zone} · ${s.status.toUpperCase()}" onclick="setPage('slots')">${escapeHtml(s.code)}</button>`).join("")||'<div class="empty">No slots added yet.</div>'}
   </div></section>
-  <section class="panel"><div class="panel-head"><h3>Recent activity</h3><span class="muted">Latest records</span></div><div class="activity">
-   ${sessions.slice(0,4).map(s=>`<div class="activity-row"><div class="activity-symbol">${s.status==="active"?"▣":"₹"}</div><b>${s.status==="active"?"Vehicle parked":"Parking completed"} · ${escapeHtml(s.vehicle)}</b><small>${new Date(s.entry_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small></div>`).join("")||'<div class="empty">Activity will appear here.</div>'}
+  <section class="panel"><div class="panel-head"><h3>Recent activity</h3><span class="muted">Live updates</span></div><div class="activity">
+   ${((d.recent_bookings && d.recent_bookings.length > 0) || sessions.length > 0)
+     ? [
+         ...(d.recent_bookings || []).map(b => ({
+             icon: "▦",
+             title: `Reservation · Slot ${escapeHtml(b.slot || '—')}`,
+             sub: `${escapeHtml(b.customer || 'Customer')} · ${escapeHtml(b.vehicle)} · ${b.status}`,
+             isRes: true
+         })),
+         ...sessions.map(s => ({
+             icon: s.status === "active" ? "▣" : "₹",
+             title: `${s.status === "active" ? "Vehicle parked" : "Parking completed"} · ${escapeHtml(s.vehicle)}`,
+             sub: `${escapeHtml(s.slot)} · ${new Date(s.entry_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`,
+             isRes: false
+         }))
+       ].slice(0, 5).map(item => `
+         <div class="activity-row">
+           <div class="activity-symbol" style="${item.isRes ? 'background:#fef3c7;color:#d97706' : ''}">${item.icon}</div>
+           <div style="flex:1;min-width:0">
+             <b>${item.title}</b>
+             <small style="display:block;color:var(--muted);font-size:10px">${item.sub}</small>
+           </div>
+         </div>
+       `).join("")
+     : '<div class="empty">Activity will appear here.</div>'
+   }
   </div></section>
  </div>`;
 }
@@ -132,10 +158,10 @@ async function renderVehicles(root){
 function vehicleRows(rows){return rows.map(v=>`<tr><td><b>${escapeHtml(v.registration_number)}</b></td><td>${escapeHtml(v.owner_name)}</td><td>${escapeHtml(v.phone||"—")}</td><td>${escapeHtml(v.vehicle_type)}</td><td class="table-actions"><button onclick="editVehicle(${v.id})">Edit</button> <button onclick="removeVehicle(${v.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="5" class="empty">No vehicles found.</td></tr>'}
 async function renderSlots(root){
  const rows=await request("/slots");slotsCache=rows;
- root.innerHTML=`<section class="panel"><div class="toolbar"><div><b>${rows.length} parking slots</b><div class="muted" style="font-size:11px;margin-top:4px">Select a slot to see its current status.</div></div><select class="search-input" id="slotFilter"><option value="">All statuses</option><option>available</option><option>occupied</option></select></div><div class="slot-grid" id="slotGrid">${slotButtons(rows)}</div></section>`;
+ root.innerHTML=`<section class="panel"><div class="toolbar"><div><b>${rows.length} parking slots</b><div class="muted" style="font-size:11px;margin-top:4px">Select a slot to see its current status.</div></div><select class="search-input" id="slotFilter"><option value="">All statuses</option><option value="available">available</option><option value="occupied">occupied</option><option value="reserved">reserved</option></select></div><div class="slot-grid" id="slotGrid">${slotButtons(rows)}</div></section>`;
  $("#slotFilter").addEventListener("change",e=>$("#slotGrid").innerHTML=slotButtons(rows.filter(s=>!e.target.value||s.status===e.target.value)));
 }
-function slotButtons(rows){return rows.map(s=>`<button class="slot ${s.status}" onclick="slotInfo(${s.id})" title="${s.zone} · ${s.slot_type}">${escapeHtml(s.code)}<br><small>${s.status}</small></button>`).join("")||'<div class="empty">No slots. Add your first parking slot.</div>'}
+function slotButtons(rows){return rows.map(s=>`<button class="slot ${s.status}" onclick="slotInfo(${s.id})" title="${s.zone} · ${s.slot_type} · ${s.status.toUpperCase()}">${escapeHtml(s.code)}<br><small>${s.status}</small></button>`).join("")||'<div class="empty">No slots. Add your first parking slot.</div>'}
 async function renderSessions(root){
  const rows=await request("/sessions");sessionsCache=rows;
  root.innerHTML=`<section class="panel"><div class="panel-head"><h3>Parking sessions</h3><button class="primary-btn" onclick="openCheckIn()">＋ Check in vehicle</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>VEHICLE</th><th>OWNER</th><th>SLOT</th><th>ENTRY TIME</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
@@ -144,7 +170,11 @@ async function renderSessions(root){
 }
 async function renderBookings(root){
  const [rows,slots]=await Promise.all([request("/bookings"),request("/slots")]);
- root.innerHTML=`<section class="panel"><div class="panel-head"><h3>Reservations</h3><button class="primary-btn" onclick="openBookingModal()">＋ New booking</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>BOOKING</th><th>CUSTOMER</th><th>VEHICLE</th><th>SLOT</th><th>START</th><th>STATUS</th></tr></thead><tbody>${rows.map(b=>`<tr><td>#BK-${b.id}</td><td>${escapeHtml(b.customer_name)}</td><td>${escapeHtml(b.vehicle_number)}</td><td>${slots.find(s=>s.id===b.slot_id)?.code||"—"}</td><td>${new Date(b.start_time).toLocaleString()}</td><td><span class="pill green">${b.status}</span></td></tr>`).join("")||'<tr><td colspan="6" class="empty">No bookings created yet.</td></tr>'}</tbody></table></div></section>`;
+ root.innerHTML=`<section class="panel"><div class="panel-head"><h3>Reservations</h3><button class="primary-btn" onclick="openBookingModal()">＋ New booking</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>BOOKING</th><th>CUSTOMER</th><th>VEHICLE</th><th>SLOT</th><th>START</th><th>STATUS</th></tr></thead><tbody>${rows.map(b=>{
+   const slotCode = slots.find(s=>s.id===b.slot_id)?.code || b.slot_code || `Slot #${b.slot_id}`;
+   const statusClass = b.status === 'confirmed' ? 'green' : b.status === 'cancelled' ? 'red' : 'blue';
+   return `<tr><td><b>#BK-${b.id}</b></td><td>${escapeHtml(b.customer_name)}</td><td>${escapeHtml(b.vehicle_number)}</td><td>${escapeHtml(slotCode)}</td><td>${new Date(b.start_time).toLocaleString()}</td><td><span class="pill ${statusClass}">${escapeHtml(b.status)}</span></td></tr>`;
+ }).join("")||'<tr><td colspan="6" class="empty">No bookings created yet.</td></tr>'}</tbody></table></div></section>`;
 }
 async function renderReports(root){
  const [d,s]=await Promise.all([request("/dashboard"),request("/sessions")]);
@@ -162,7 +192,7 @@ async function editVehicle(id){const v=(await request("/vehicles")).find(x=>x.id
 async function removeVehicle(id){if(!confirm("Delete this vehicle record?"))return;try{await request("/vehicles/"+id,{method:"DELETE"});toast("Vehicle deleted.");renderPage()}catch(e){toast(e.message)}}
 function openSlotModal(){openModal("Add parking slot",[{name:"code",label:"Slot code",placeholder:"e.g. A21"},{name:"zone",label:"Parking zone",value:"Block A"},{name:"slot_type",label:"Slot type",options:["car","bike","suv"].map(x=>({value:x,label:x.toUpperCase()}))}],d=>request("/slots",{method:"POST",body:JSON.stringify(d)}))}
 function slotInfo(id){const s=slotsCache.find(x=>x.id===id);if(!s)return;const msg=`${s.code} · ${s.zone}\nStatus: ${s.status}\nType: ${s.slot_type}`;if(s.status==="available"&&confirm(msg+"\n\nDelete this slot?"))request("/slots/"+id,{method:"DELETE"}).then(()=>{toast("Slot deleted.");renderPage()}).catch(e=>toast(e.message));else toast(msg.replace(/\n/g," · "))}
-function openCheckIn(){openModal("Check in vehicle",[{name:"vehicle_number",label:"Vehicle registration",placeholder:"DL10AB1234"},{name:"slot_code",label:"Available slot",options:slotsCache.filter(s=>s.status==="available").map(s=>({value:s.code,label:s.code+" · "+s.zone}))}],d=>request("/check-in?"+new URLSearchParams(d),{method:"POST"}))}
+function openCheckIn(){openModal("Check in vehicle",[{name:"vehicle_number",label:"Vehicle registration",placeholder:"DL10AB1234"},{name:"slot_code",label:"Select slot",options:slotsCache.filter(s=>s.status==="available"||s.status==="reserved").map(s=>({value:s.code,label:s.code+" · "+s.zone+(s.status==="reserved"?" (Reserved)":" (Available)"))}))}],d=>request("/check-in?"+new URLSearchParams(d),{method:"POST"}))}
 async function checkout(id){if(!confirm("Confirm vehicle checkout?"))return;try{const r=await request("/check-out/"+id,{method:"POST"});toast(`Checkout complete · ${money(r.amount)}`);renderPage()}catch(e){toast(e.message)}}
 async function openBookingModal(){const slots=await request("/slots");openModal("Create parking booking",[{name:"vehicle_number",label:"Vehicle number"},{name:"customer_name",label:"Customer name"},{name:"slot_id",label:"Parking slot",options:slots.map(s=>({value:s.id,label:s.code+" ("+s.status+")"}))},{name:"start_time",label:"Start time",type:"datetime-local"},{name:"end_time",label:"End time",type:"datetime-local"}],d=>request("/bookings",{method:"POST",body:JSON.stringify({...d,slot_id:Number(d.slot_id),start_time:new Date(d.start_time).toISOString(),end_time:new Date(d.end_time).toISOString()})}))}
 function downloadCSV(){request("/sessions").then(rows=>{const cols=["vehicle","owner","slot","entry_time","exit_time","amount","status"];const csv=[cols.join(","),...rows.map(r=>cols.map(k=>JSON.stringify(r[k]??"")).join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="parkwise-sessions.csv";a.click();URL.revokeObjectURL(a.href)})}

@@ -55,13 +55,24 @@ def get_dashboard(
     db: Session = Depends(get_db),
 ):
     """Return dashboard metrics calculated from persisted database records (Admin only)."""
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    active_reserved_slot_ids = {
+        b.slot_id
+        for b in db.query(models.Booking.slot_id).filter(
+            models.Booking.status == "confirmed",
+            models.Booking.end_time > now_utc,
+        ).all()
+    }
+    reserved_slots_count = len(active_reserved_slot_ids)
+
     total_slots = db.query(models.ParkingSlot).count()
     occupied_slots = db.query(models.ParkingSlot).filter(
         models.ParkingSlot.status == "occupied"
     ).count()
-    available_slots = db.query(models.ParkingSlot).filter(
+    raw_available = db.query(models.ParkingSlot).filter(
         models.ParkingSlot.status == "available"
     ).count()
+    available_slots = max(0, raw_available - reserved_slots_count)
     total_vehicles = db.query(models.Vehicle).count()
     active_sessions = db.query(models.ParkingSession).filter(
         models.ParkingSession.status == "active"
@@ -86,15 +97,24 @@ def get_dashboard(
         .all()
     )
 
+    recent_bookings = (
+        db.query(models.Booking)
+        .order_by(models.Booking.start_time.desc())
+        .limit(6)
+        .all()
+    )
+
     return {
         "total_vehicles": total_vehicles,
         "occupied_slots": occupied_slots,
         "available_slots": available_slots,
+        "reserved_slots": reserved_slots_count,
         "total_slots": total_slots,
         "active_sessions": active_sessions,
+        "total_bookings": db.query(models.Booking).count(),
         "today_revenue": round(float(today_revenue or 0), 2),
         "occupancy_percent": (
-            round(occupied_slots / total_slots * 100)
+            round((occupied_slots + reserved_slots_count) / total_slots * 100)
             if total_slots else 0
         ),
         "recent_sessions": [
@@ -114,6 +134,22 @@ def get_dashboard(
             }
             for item in recent_sessions
         ],
+        "recent_bookings": [
+            {
+                "id": b.id,
+                "vehicle": b.vehicle_number,
+                "customer": b.customer_name,
+                "slot_id": b.slot_id,
+                "slot": (
+                    db.get(models.ParkingSlot, b.slot_id).code
+                    if db.get(models.ParkingSlot, b.slot_id) else "—"
+                ),
+                "start_time": format_utc_iso(b.start_time),
+                "end_time": format_utc_iso(b.end_time),
+                "status": b.status,
+            }
+            for b in recent_bookings
+        ],
     }
 
 
@@ -127,11 +163,38 @@ def list_slots(
     slot_status: str | None = None,
     db: Session = Depends(get_db),
 ):
-    """List parking slots. Open to authenticated or public inquiries."""
+    """List parking slots with live active reservation status."""
     query = db.query(models.ParkingSlot)
-    if slot_status:
-        query = query.filter(models.ParkingSlot.status == slot_status)
-    return query.order_by(models.ParkingSlot.code).all()
+    slots = query.order_by(models.ParkingSlot.code).all()
+
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    active_reserved_slot_ids = {
+        b.slot_id
+        for b in db.query(models.Booking.slot_id).filter(
+            models.Booking.status == "confirmed",
+            models.Booking.end_time > now_utc,
+        ).all()
+    }
+
+    results = []
+    for s in slots:
+        status_val = s.status
+        if status_val == "available" and s.id in active_reserved_slot_ids:
+            status_val = "reserved"
+
+        if slot_status and status_val != slot_status:
+            continue
+
+        results.append(
+            schemas.SlotOut(
+                id=s.id,
+                code=s.code,
+                zone=s.zone,
+                slot_type=s.slot_type,
+                status=status_val,
+            )
+        )
+    return results
 
 
 @app.post(
