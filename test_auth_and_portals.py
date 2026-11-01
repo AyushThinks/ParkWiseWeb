@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
@@ -410,6 +410,32 @@ def test_admin_parking_session_workflow():
     # Sessions history contains the completed session
     sessions = client.get("/api/sessions", headers=admin_headers).json()
     assert any(s["id"] == session_id and s["status"] == "completed" for s in sessions)
+
+    # Admin dashboard returns comprehensive stats
+    r_dash = client.get("/api/dashboard", headers=admin_headers)
+    assert r_dash.status_code == 200
+    dash_data = r_dash.json()
+    assert "total_vehicles" in dash_data
+    assert "available_slots" in dash_data
+    assert "reserved_slots" in dash_data
+    assert "recent_bookings" in dash_data
+
+    # Admin can cancel a booking
+    admin_bk = client.post(
+        "/api/bookings",
+        headers=admin_headers,
+        json={
+            "vehicle_number": "DL01AB1234",
+            "customer_name": "Walk-in Guest",
+            "slot_id": b01["id"],
+            "start_time": (datetime.now(timezone.utc) + timedelta(hours=3)).isoformat(),
+            "end_time": (datetime.now(timezone.utc) + timedelta(hours=5)).isoformat(),
+        },
+    )
+    assert admin_bk.status_code == 201
+    abk_id = admin_bk.json()["booking_id"]
+    r_cancel_abk = client.post(f"/api/bookings/{abk_id}/cancel", headers=admin_headers)
+    assert r_cancel_abk.status_code == 200
 
 
 if __name__ == "__main__":

@@ -170,11 +170,19 @@ async function renderSessions(root){
 }
 async function renderBookings(root){
  const [rows,slots]=await Promise.all([request("/bookings"),request("/slots")]);
- root.innerHTML=`<section class="panel"><div class="panel-head"><h3>Reservations</h3><button class="primary-btn" onclick="openBookingModal()">＋ New booking</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>BOOKING</th><th>CUSTOMER</th><th>VEHICLE</th><th>SLOT</th><th>START</th><th>STATUS</th></tr></thead><tbody>${rows.map(b=>{
+ root.innerHTML=`<section class="panel"><div class="panel-head"><h3>Reservations</h3><button class="primary-btn" onclick="openBookingModal()">＋ New booking</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>BOOKING</th><th>CUSTOMER</th><th>VEHICLE</th><th>SLOT</th><th>START</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>${rows.map(b=>{
    const slotCode = slots.find(s=>s.id===b.slot_id)?.code || b.slot_code || `Slot #${b.slot_id}`;
    const statusClass = b.status === 'confirmed' ? 'green' : b.status === 'cancelled' ? 'red' : 'blue';
-   return `<tr><td><b>#BK-${b.id}</b></td><td>${escapeHtml(b.customer_name)}</td><td>${escapeHtml(b.vehicle_number)}</td><td>${escapeHtml(slotCode)}</td><td>${new Date(b.start_time).toLocaleString()}</td><td><span class="pill ${statusClass}">${escapeHtml(b.status)}</span></td></tr>`;
- }).join("")||'<tr><td colspan="6" class="empty">No bookings created yet.</td></tr>'}</tbody></table></div></section>`;
+   return `<tr><td><b>#BK-${b.id}</b></td><td>${escapeHtml(b.customer_name)}</td><td>${escapeHtml(b.vehicle_number)}</td><td>${escapeHtml(slotCode)}</td><td>${new Date(b.start_time).toLocaleString()}</td><td><span class="pill ${statusClass}">${escapeHtml(b.status)}</span></td><td class="table-actions">${b.status==='confirmed'?`<button onclick="cancelAdminBooking(${b.id})">Cancel</button>`:'—'}</td></tr>`;
+ }).join("")||'<tr><td colspan="7" class="empty">No bookings created yet.</td></tr>'}</tbody></table></div></section>`;
+}
+async function cancelAdminBooking(id){
+  if(!confirm("Cancel this booking? This will free the slot.")) return;
+  try{
+    await request("/bookings/"+id+"/cancel",{method:"POST"});
+    toast("Booking cancelled.");
+    renderPage();
+  }catch(e){toast(e.message)}
 }
 async function renderReports(root){
  const [d,s]=await Promise.all([request("/dashboard"),request("/sessions")]);
@@ -201,16 +209,35 @@ $("#closeModal").onclick=$("#cancelModal").onclick=()=>$("#modal").classList.rem
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("dark");localStorage.setItem("parkwise-theme",document.body.classList.contains("dark")?"dark":"light")};
 if(localStorage.getItem("parkwise-theme")==="dark")document.body.classList.add("dark");
 
+function showAdminAuthError(title, msg, btnText, btnHref, onBtnClick) {
+  const root = $("#pageContent");
+  if (!root) return;
+  root.innerHTML = `
+    <div class="panel empty" style="text-align:center;padding:50px 20px;max-width:540px;margin:40px auto">
+      <div style="font-size:42px;margin-bottom:14px">🔒</div>
+      <h2 style="font-size:20px;margin-bottom:8px">${escapeHtml(title)}</h2>
+      <p class="muted" style="margin-bottom:24px">${escapeHtml(msg)}</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        ${btnHref ? `<a href="${btnHref}" class="primary-btn" style="text-decoration:none;display:inline-block;padding:11px 24px">${escapeHtml(btnText)}</a>` : ''}
+        ${onBtnClick ? `<button class="primary-btn" id="authActionBtn" style="padding:11px 24px">${escapeHtml(btnText)}</button>` : ''}
+      </div>
+    </div>
+  `;
+  if (onBtnClick && $("#authActionBtn")) {
+    $("#authActionBtn").onclick = onBtnClick;
+  }
+}
+
+function logoutAdmin() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+  fetch(API + "/auth/logout", { method: "POST" }).catch(() => {});
+  window.location.href = "/login.html";
+}
+
 const logoutBtn = $("#logoutBtn");
 if (logoutBtn) {
-  logoutBtn.onclick = async () => {
-    try {
-      await fetch(API + "/auth/logout", { method: "POST" });
-    } catch {}
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
-    window.location.href = "/login.html";
-  };
+  logoutBtn.onclick = logoutAdmin;
 }
 
 document.querySelectorAll(".nav-item[data-page]").forEach(b=>b.addEventListener("click",()=>setPage(b.dataset.page)));
@@ -218,17 +245,45 @@ document.querySelectorAll(".nav-item[data-page]").forEach(b=>b.addEventListener(
 async function init(){
   const token = localStorage.getItem("access_token");
   if (!token) {
-    window.location.href = "/login.html";
+    showAdminAuthError(
+      "Administrator Sign In Required",
+      "Please sign in with your ParkWise administrator credentials to access this workspace.",
+      "Sign In to Admin Portal →",
+      "/login.html"
+    );
+    setTimeout(() => { window.location.href = "/login.html"; }, 1500);
     return;
   }
 
   try{
     const me = await request("/auth/me");
-    if (!me) return;
+    if (!me) {
+      showAdminAuthError(
+        "Session Expired",
+        "Your login session has expired. Please sign in again.",
+        "Sign In →",
+        "/login.html"
+      );
+      setTimeout(() => { window.location.href = "/login.html"; }, 1500);
+      return;
+    }
 
     if (me.role !== "ADMIN") {
       // Normal customers must never access admin panel
-      window.location.href = "/customer";
+      showAdminAuthError(
+        "Customer Account Detected",
+        `You are currently signed in as a Customer (${me.email}). Facility Admin functions require an Administrator account.`,
+        "Sign Out & Switch to Admin",
+        null,
+        logoutAdmin
+      );
+      const p = $("#pageContent .panel");
+      if (p) {
+        const btnContainer = p.querySelector("div:last-child");
+        if (btnContainer) {
+          btnContainer.insertAdjacentHTML("afterbegin", `<a href="/customer" class="secondary-btn" style="text-decoration:none;display:inline-block;padding:11px 24px">Go to Customer Portal</a>`);
+        }
+      }
       return;
     }
 
@@ -240,11 +295,19 @@ async function init(){
     setPage("dashboard");
   }catch(e){
     if (e.message && e.message.includes("401")) {
-      window.location.href = "/login.html";
+      showAdminAuthError(
+        "Session Expired",
+        "Your session has expired. Please sign in again.",
+        "Sign In →",
+        "/login.html"
+      );
+      setTimeout(() => { window.location.href = "/login.html"; }, 1500);
       return;
     }
     const root=$("#pageContent");
-    root.innerHTML=`<div class="panel empty">Could not connect to the ParkWise API: ${escapeHtml(e.message)}<br><br>Check that the FastAPI server is running, then refresh this page.</div>`;
+    if (root) {
+      root.innerHTML=`<div class="panel empty">Could not connect to the ParkWise API: ${escapeHtml(e.message)}<br><br><button class="primary-btn" onclick="init()">Try again</button></div>`;
+    }
     toast("API connection failed.");
   }
 }

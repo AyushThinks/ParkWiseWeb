@@ -652,6 +652,23 @@ def create_booking(
         raise HTTPException(500, f"Failed to create booking: {str(exc)}")
 
 
+@app.post("/api/bookings/{booking_id}/cancel", tags=["Bookings"])
+@app.delete("/api/bookings/{booking_id}", tags=["Bookings"])
+def cancel_booking_admin(
+    booking_id: int,
+    current_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Cancel or release a reservation (Admin only)."""
+    booking = db.get(models.Booking, booking_id)
+    if not booking:
+        raise HTTPException(404, "Booking not found.")
+
+    booking.status = "cancelled"
+    db.commit()
+    return {"message": "Booking cancelled successfully."}
+
+
 # ---------------------------------------------------------------------------
 # HTML Page Routing
 # ---------------------------------------------------------------------------
