@@ -7,6 +7,25 @@ let sessionsCache = [];
 const $ = (s) => document.querySelector(s);
 const money = (n) => "₹" + Number(n || 0).toLocaleString("en-IN", {maximumFractionDigits:2});
 
+function extractErrorMessage(data, fallback = "Something went wrong.") {
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.detail) {
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      return data.detail.map(item => {
+        const field = Array.isArray(item.loc) ? item.loc.slice(1).join(" ") : "";
+        const msg = item.msg || item.message || JSON.stringify(item);
+        return field ? `${field}: ${msg}` : msg;
+      }).join("; ");
+    }
+    if (typeof data.detail === "object") return JSON.stringify(data.detail);
+  }
+  if (data.message) return data.message;
+  if (data.error) return data.error;
+  return fallback;
+}
+
 async function request(path, options={}) {
   const token = localStorage.getItem("access_token");
   const headers = {
@@ -34,8 +53,13 @@ async function request(path, options={}) {
     let msg = "Something went wrong.";
     try {
       const d = await res.json();
-      msg = d.detail || msg;
-    } catch {}
+      msg = extractErrorMessage(d, msg);
+    } catch {
+      try {
+        const txt = await res.text();
+        if (txt && txt.length < 200) msg = txt;
+      } catch {}
+    }
     throw new Error(msg);
   }
 

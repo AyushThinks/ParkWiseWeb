@@ -1542,7 +1542,10 @@
                 request('/customer/bookings')
             ]);
 
-            const totalBookings = bookings ? bookings.length : 0;
+            const totalAvailable = dashboard.total_available ?? dashboard.total_available_slots ?? 0;
+            const availableCar = dashboard.available_car ?? dashboard.available_car_slots ?? 0;
+            const availableBike = dashboard.available_bike ?? dashboard.available_bike_slots ?? 0;
+            const totalBookings = dashboard.total_bookings ?? (bookings ? bookings.length : 0);
             const upcoming = dashboard.upcoming_bookings || [];
             const activity = dashboard.recent_activity || [];
 
@@ -1551,7 +1554,7 @@
                 <div class="stats">
                     ${stat(
                         '▤',
-                        dashboard.total_available,
+                        totalAvailable,
                         'Total Available Slots',
                         'Across all parking zones',
                         '#e7f9ef',
@@ -1559,7 +1562,7 @@
                     )}
                     ${stat(
                         '🚗',
-                        dashboard.available_car,
+                        availableCar,
                         'Available Car Slots',
                         'Four-wheeler parking',
                         '#e9f3ff',
@@ -1567,7 +1570,7 @@
                     )}
                     ${stat(
                         '🏍',
-                        dashboard.available_bike,
+                        availableBike,
                         'Available Bike Slots',
                         'Two-wheeler parking',
                         '#f0eaff',
@@ -1673,7 +1676,7 @@
          * ============================ */
         async function renderSlots(root) {
             const slots = await request('/customer/slots');
-            availableSlots = slots.filter(s => s.status === 'available');
+            availableSlots = (slots || []).filter(s => s.status === 'available');
 
             root.innerHTML = `
                 <section class="panel">
@@ -1695,7 +1698,11 @@
                                 <option value="">All Statuses</option>
                                 <option value="available">Available</option>
                                 <option value="occupied">Occupied</option>
+                                <option value="reserved">Reserved</option>
                             </select>
+                            <button class="secondary-btn" id="refreshSlotsBtn" type="button" style="padding:9px 13px;font-size:12px">
+                                ↻ Refresh
+                            </button>
                         </div>
                         <div class="slot-legend">
                             <span>
@@ -1703,6 +1710,9 @@
                             </span>
                             <span>
                                 <i style="background:#8065ed"></i> Occupied
+                            </span>
+                            <span>
+                                <i style="background:#f59e0b"></i> Reserved
                             </span>
                         </div>
                     </div>
@@ -1722,7 +1732,7 @@
 
             /* Filter and search event listeners */
             const filterSlots = () => {
-                const search = ($('#slotSearch')?.value || '').toLowerCase();
+                const search = ($('#slotSearch')?.value || '').trim().toLowerCase();
                 const typeFilter = $('#slotTypeFilter')?.value || '';
                 const statusFilter = $('#slotStatusFilter')?.value || '';
 
@@ -1742,6 +1752,7 @@
             $('#slotSearch').addEventListener('input', filterSlots);
             $('#slotTypeFilter').addEventListener('change', filterSlots);
             $('#slotStatusFilter').addEventListener('change', filterSlots);
+            $('#refreshSlotsBtn').addEventListener('click', () => renderSlots(root));
         }
 
         /**
@@ -1772,11 +1783,14 @@
          * Open booking modal pre-filled with selected slot
          */
         function openBookingModal(slotId, slotCode, slotType) {
-            $('#modalTitle').textContent = 'Book Parking Slot';
+            $('#modalTitle').textContent = `Book Slot ${slotCode}`;
+            const startVal = nowLocal();
+            const endVal = hoursFromNowLocal(2);
+
             $('#modalFields').innerHTML = `
                 <div class="field full">
                     <label>Selected Slot</label>
-                    <input type="text" value="${slotCode} (${slotType})" disabled>
+                    <input type="text" value="${escapeHtml(slotCode)} (${escapeHtml(slotType.toUpperCase())})" disabled>
                     <input type="hidden" name="slot_id" value="${slotId}">
                 </div>
                 <div class="field full">
@@ -1786,8 +1800,9 @@
                         type="text"
                         placeholder="e.g. DL10AB1234"
                         required
-                        pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9 -]{4,20}"
+                        pattern="[A-Za-z0-9 -]{4,20}"
                         title="Enter a valid vehicle registration number"
+                        autofocus
                     >
                 </div>
                 <div class="field">
@@ -1795,7 +1810,8 @@
                     <input
                         name="start_time"
                         type="datetime-local"
-                        min="${nowLocal()}"
+                        value="${startVal}"
+                        min="${startVal}"
                         required
                     >
                 </div>
@@ -1804,6 +1820,8 @@
                     <input
                         name="end_time"
                         type="datetime-local"
+                        value="${endVal}"
+                        min="${startVal}"
                         required
                     >
                 </div>
@@ -1825,15 +1843,33 @@
                 e.preventDefault();
                 const fd = new FormData(e.target);
                 const data = Object.fromEntries(fd.entries());
+                const vehicleNumber = (data.vehicle_number || '').trim().toUpperCase();
+
+                const startDt = new Date(data.start_time);
+                const endDt = new Date(data.end_time);
+
+                if (isNaN(startDt.getTime()) || isNaN(endDt.getTime())) {
+                    toast('Please select valid start and end dates/times.');
+                    return;
+                }
+
+                if (endDt <= startDt) {
+                    toast('End time must be after start time.');
+                    return;
+                }
+
+                const btn = $('#modalSubmitBtn');
+                btn.disabled = true;
+                btn.textContent = 'Confirming…';
 
                 try {
                     await request('/customer/bookings', {
                         method: 'POST',
                         body: JSON.stringify({
-                            vehicle_number: data.vehicle_number,
+                            vehicle_number: vehicleNumber,
                             slot_id: Number(data.slot_id),
-                            start_time: new Date(data.start_time).toISOString(),
-                            end_time: new Date(data.end_time).toISOString()
+                            start_time: startDt.toISOString(),
+                            end_time: endDt.toISOString()
                         })
                     });
                     $('#modal').classList.remove('show');
@@ -1841,6 +1877,9 @@
                     setPage('bookings');
                 } catch (err) {
                     toast(err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Confirm Booking';
                 }
             };
         }
@@ -1851,6 +1890,8 @@
         async function renderBookForm(root) {
             const slots = await request('/customer/slots?status=available');
             availableSlots = slots || [];
+            const defaultStart = nowLocal();
+            const defaultEnd = hoursFromNowLocal(2);
 
             root.innerHTML = `
                 <section class="panel booking-form-card">
@@ -1870,7 +1911,7 @@
                                     placeholder="e.g. DL10AB1234"
                                     required
                                     id="bfVehicle"
-                                    pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9 -]{4,20}"
+                                    pattern="[A-Za-z0-9 -]{4,20}"
                                     title="Enter a valid vehicle registration number"
                                 >
                             </div>
@@ -1896,7 +1937,8 @@
                                     type="datetime-local"
                                     required
                                     id="bfStart"
-                                    min="${nowLocal()}"
+                                    value="${defaultStart}"
+                                    min="${defaultStart}"
                                 >
                             </div>
 
@@ -1908,6 +1950,8 @@
                                     type="datetime-local"
                                     required
                                     id="bfEnd"
+                                    value="${defaultEnd}"
+                                    min="${defaultStart}"
                                 >
                             </div>
                         </div>
@@ -1958,7 +2002,7 @@
 
             /* Live summary updates */
             const updateSummary = () => {
-                const vehicle = $('#bfVehicle').value;
+                const vehicle = ($('#bfVehicle').value || '').trim().toUpperCase();
                 const slotSelect = $('#bfSlot');
                 const slotText = slotSelect.options[slotSelect.selectedIndex]?.text || '—';
                 const start = $('#bfStart').value;
@@ -1996,14 +2040,23 @@
             });
             $('#bfEnd').addEventListener('change', updateSummary);
 
+            // Initial summary calculation
+            updateSummary();
+
             /* Form submission */
             $('#bookingForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
                 const data = Object.fromEntries(fd.entries());
+                const vehicleNumber = (data.vehicle_number || '').trim().toUpperCase();
 
                 const startDt = new Date(data.start_time);
                 const endDt = new Date(data.end_time);
+
+                if (isNaN(startDt.getTime()) || isNaN(endDt.getTime())) {
+                    toast('Please select valid start and end dates/times.');
+                    return;
+                }
 
                 if (endDt <= startDt) {
                     toast('End time must be after start time.');
@@ -2018,7 +2071,7 @@
                     await request('/customer/bookings', {
                         method: 'POST',
                         body: JSON.stringify({
-                            vehicle_number: data.vehicle_number,
+                            vehicle_number: vehicleNumber,
                             slot_id: Number(data.slot_id),
                             start_time: startDt.toISOString(),
                             end_time: endDt.toISOString()
@@ -2115,75 +2168,34 @@
         }
 
         /**
-         * Show cancel confirmation dialog in modal
+         * Show cancel confirmation dialog using confirmModal
          */
         function confirmCancel(bookingId) {
-            $('#modalContent').innerHTML = `
-                <div class="confirm-dialog">
-                    <div style="font-size:40px;margin-bottom:14px">⚠️</div>
-                    <h2>Cancel Booking?</h2>
-                    <p>
-                        Are you sure you want to cancel booking
-                        <b>#BK-${bookingId}</b>?
-                        This action cannot be undone.
-                    </p>
-                    <div class="confirm-actions">
-                        <button class="secondary-btn" onclick="closeConfirmModal()">
-                            Keep Booking
-                        </button>
-                        <button class="danger-btn" style="padding:11px 20px;font-size:13px"
-                            onclick="cancelBooking(${bookingId})">
-                            Yes, Cancel
-                        </button>
-                    </div>
-                </div>
-            `;
-            $('#modal').classList.add('show');
-        }
-
-        /**
-         * Close the confirm modal and restore default modal content
-         */
-        function closeConfirmModal() {
-            $('#modal').classList.remove('show');
-
-            /* Restore the default modal structure */
-            setTimeout(() => {
-                $('#modalContent').innerHTML = `
-                    <div class="modal-head">
-                        <div>
-                            <div class="eyebrow">PARKWISE</div>
-                            <h2 id="modalTitle">Book Parking</h2>
-                        </div>
-                        <button class="icon-btn" id="closeModal" onclick="$('#modal').classList.remove('show')">×</button>
-                    </div>
-                    <form id="modalForm">
-                        <div id="modalFields" class="form-grid"></div>
-                        <div class="modal-actions">
-                            <button type="button" class="secondary-btn" id="cancelModal"
-                                onclick="$('#modal').classList.remove('show')">Cancel</button>
-                            <button class="primary-btn" type="submit">Confirm Booking</button>
-                        </div>
-                    </form>
-                `;
-            }, 300);
+            $('#confirmTitle').textContent = `Cancel Booking #BK-${bookingId}?`;
+            $('#confirmMessage').innerHTML = `Are you sure you want to cancel booking <b>#BK-${bookingId}</b>? This action cannot be undone.`;
+            $('#confirmActionBtn').onclick = () => cancelBooking(bookingId);
+            $('#confirmModal').classList.add('show');
         }
 
         /**
          * Cancel a booking via API
          */
         async function cancelBooking(bookingId) {
+            const btn = $('#confirmActionBtn');
+            btn.disabled = true;
+            btn.textContent = 'Cancelling…';
             try {
                 await request(`/customer/bookings/${bookingId}/cancel`, {
                     method: 'POST'
                 });
-                $('#modal').classList.remove('show');
+                $('#confirmModal').classList.remove('show');
                 toast('Booking cancelled successfully.');
-                /* Restore default modal structure then re-render */
-                closeConfirmModal();
                 renderPage();
             } catch (err) {
                 toast(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Yes, Cancel';
             }
         }
 
@@ -2489,6 +2501,14 @@
         $('#modal').addEventListener('click', (e) => {
             if (e.target === $('#modal')) {
                 $('#modal').classList.remove('show');
+            }
+        });
+
+        /* Confirm Modal Controls */
+        $('#confirmCloseBtn').onclick = () => $('#confirmModal').classList.remove('show');
+        $('#confirmModal').addEventListener('click', (e) => {
+            if (e.target === $('#confirmModal')) {
+                $('#confirmModal').classList.remove('show');
             }
         });
 

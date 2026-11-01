@@ -307,7 +307,7 @@ def customer_create_booking(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Slot {slot.code} is already reserved for an overlapping period "
+                f"Slot {slot.code} is already booked for an overlapping period "
                 f"({format_utc_iso(overlapping.start_time)} to {format_utc_iso(overlapping.end_time)}). "
                 f"Please choose another time or slot."
             ),
