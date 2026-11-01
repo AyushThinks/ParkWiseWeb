@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkWise — Smart Parking Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+    <aside class="sidebar">
+    <div class="brand">
+    <div class="brand-mark">P</div>
+    <div>
+        <b>ParkWise</b>
+        <small>Smart Parking</small>
+    </div>
+</div>
+<nav>
+    <button class="nav-item active" data-page="dashboard">
+    <span>⌂</span> Dashboard</button>
+    <button class="nav-item" data-page="vehicles">
+    <span>▣</span> Vehicles</button>
+    <button class="nav-item" data-page="slots">
+    <span>▤</span> Parking Slots</button>
+    <button class="nav-item" data-page="sessions">
+    <span>⇄</span> Entry / Exit</button>
+    <button class="nav-item" data-page="bookings">
+    <span>▦</span> Bookings</button>
+    <button class="nav-item" data-page="reports">
+    <span>▥</span> Reports</button>
+</nav>
+<div class="sidebar-bottom">
+<div class="side-note">
+<div class="note-icon">✦</div>
+<b>Smarter parking,<br>simpler days.</b>
+<small>ParkWise facility manager</small>
+</div>
+<button class="nav-item" id="themeToggle">
+<span>◐</span> Toggle theme</button>
+</div>
+</aside>
+<main class="main">
+<header class="topbar">
+<div class="crumb">Workspace <span>/</span>
+<b id="crumbName">Dashboard</b>
+</div>
+<div class="top-actions">
+<div class="status-dot">
+</div>
+<span class="top-label">Facility online</span>
+<div class="avatar">A</div>
+<div class="profile">
+<b>Administrator</b>
+<small>ParkWise Admin</small>
+</div>
+</div>
+</header>
+<section class="page-wrap">
+<div class="welcome">
+<div>
+    <div class="eyebrow">FACILITY OVERVIEW</div>
+    <h1 id="pageTitle">Welcome to ParkWise <span>✦</span>
+</h1>
+<p id="pageSubtitle">Here's your parking facility at a glance.</p>
+</div>
+<button class="primary-btn" id="primaryAction">＋ Add vehicle</button>
+</div>
+<div id="pageContent">
+<div class="loading">Loading your parking overview…</div>
+</div>
+</section>
+</main>
+</div>
+<div class="modal-backdrop" id="modal">
+<div class="modal">
+<div class="modal-head">
+<div>
+    <div class="eyebrow">PARKWISE WORKSPACE</div>
+    <h2 id="modalTitle">Add vehicle</h2>
+</div>
+<button class="icon-btn" id="closeModal">×</button>
+</div>
+<form id="modalForm">
+<div id="modalFields" class="form-grid">
+</div>
+<div class="modal-actions">
+<button type="button" class="secondary-btn" id="cancelModal">Cancel</button>
+<button class="primary-btn" type="submit">Save details</button>
+</div>
+</form>
+</div>
+</div>
+<div class="toast" id="toast">
+</div>
+<script src="/app.js">
+</script>
+</body>
+</html>
