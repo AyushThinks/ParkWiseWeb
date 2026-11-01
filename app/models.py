@@ -22,6 +22,22 @@ class ParkingSlot(Base):
     )
 
 
+class User(Base):
+    """Registered user (ADMIN or CUSTOMER)."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    phone: Mapped[str] = mapped_column(String(20), default="")
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(20), default="CUSTOMER")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+
+
 class Vehicle(Base):
     __tablename__ = "vehicles"
 
@@ -32,6 +48,9 @@ class Vehicle(Base):
     owner_name: Mapped[str] = mapped_column(String(100))
     phone: Mapped[str] = mapped_column(String(20), default="")
     vehicle_type: Mapped[str] = mapped_column(String(20), default="car")
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
     )
@@ -74,3 +93,6 @@ class Booking(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime)
     end_time: Mapped[datetime] = mapped_column(DateTime)
     status: Mapped[str] = mapped_column(String(20), default="confirmed")
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )

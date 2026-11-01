@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkWise — Customer Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            --bg: #f6f7fc;
+            --surface: #fff;
+            --surface2: #f8f8ff;
+            --text: #17172b;
+            --muted: #777b96;
+            --line: #e9e9f4;
+            --navy: #171b3c;
+            --primary: #6254e7;
+            --primary2: #8b5cf6;
+            --shadow: 0 8px 24px rgba(38, 35, 99, .06);
+            --green: #20b978;
+            --red: #ef6377;
+            --amber: #e8a63b;
+        }
+
+        /* ===== Dark Mode ===== */
+        body.dark {
+            --bg: #111326;
+            --surface: #1c1e36;
+            --surface2: #252741;
+            --text: #f3f2ff;
+            --muted: #a4a5c0;
+            --line: #30324f;
+            --shadow: 0 8px 24px #0002;
+        }
+
+        body.dark .topbar {
+            background: #1b1d34e8;
+        }
+
+        body.dark .quick-btn:hover {
+            background: #302b55;
+        }
+
+        body.dark .slot.available {
+            background: #173c31;
+            color: #6ee7a8;
+        }
+
+        body.dark .slot.occupied {
+            background: #30275a;
+            color: #c4b5fd;
+        }
+
+        body.dark .slot.reserved {
+            background: #49371b;
+            color: #fcd38d;
+        }
+
+        body.dark .pill.green {
+            background: #173c31;
+            color: #6ee7a8;
+        }
+
+        body.dark .pill.red {
+            background: #3d1c24;
+            color: #fca5b0;
+        }
+
+        body.dark .pill.blue {
+            background: #1c2a4a;
+            color: #93b8f8;
+        }
+
+        body.dark .pw-check.met {
+            color: #6ee7a8;
+        }
+
+        body.dark .booking-summary {
+            background: var(--surface2);
+            border-color: var(--line);
+        }
+
+        /* ===== Reset & Base ===== */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        /* ===== App Shell Layout ===== */
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ===== Sidebar ===== */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(165deg, #191d43, #25205b 72%, #39246f);
+            color: #fff;
+            padding: 27px 17px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            inset: 0 auto 0 0;
+            z-index: 2;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 0 9px 38px;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #31a5ff, #7454ed);
+            display: grid;
+            place-items: center;
+            font-size: 25px;
+            font-weight: 800;
+            box-shadow: 0 7px 18px #10153f;
+        }
+
+        .brand b {
+            display: block;
+            font-size: 20px;
+            letter-spacing: -.5px;
+        }
+
+        .brand small {
+            display: block;
+            color: #bcbde0;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* ===== Navigation Items ===== */
+        .sidebar nav {
+            display: grid;
+            gap: 7px;
+        }
+
+        .nav-item {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #c9c9e3;
+            text-align: left;
+            padding: 13px 14px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: .2s;
+        }
+
+        .nav-item span {
+            font-size: 20px;
+            width: 22px;
+            text-align: center;
+        }
+
+        .nav-item:hover {
+            background: #ffffff13;
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(100deg, #6254e7, #8b4ce6);
+            color: white;
+            box-shadow: 0 8px 18px #17123e66;
+        }
+
+        /* ===== Sidebar Bottom ===== */
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .side-note {
+            margin: 0 5px 19px;
+            padding: 17px 15px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #ffffff13, #ffffff08);
+            border: 1px solid #ffffff17;
+        }
+
+        .note-icon {
+            color: #c3b7ff;
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .side-note b {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .side-note small {
+            display: block;
+            color: #b9b9d6;
+            font-size: 10px;
+            margin-top: 8px;
+        }
+
+        /* ===== Main Area ===== */
+        .main {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            min-height: 100vh;
+        }
+
+        /* ===== Top Bar ===== */
+        .topbar {
+            height: 72px;
+            background: #ffffffd9;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 36px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            backdrop-filter: blur(12px);
+        }
+
+        .crumb {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .crumb span {
+            padding: 0 9px;
+            color: #c4c5d6;
+        }
+
+        .crumb b {
+            color: var(--text);
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #23c483;
+            box-shadow: 0 0 0 4px #e3f8ee;
+        }
+
+        .top-label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-right: 14px;
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6758ed, #a16cf1);
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .profile b,
+        .profile small {
+            display: block;
+        }
+
+        .profile b {
+            font-size: 11px;
+        }
+
+        .profile small {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* ===== Page Wrap ===== */
+        .page-wrap {
+            padding: 32px 36px 50px;
+            max-width: 1600px;
+            margin: auto;
+        }
+
+        .welcome {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            margin-bottom: 25px;
+        }
+
+        .eyebrow {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.4px;
+            color: #8b80df;
+        }
+
+        .welcome h1 {
+            font-size: 27px;
+            letter-spacing: -1px;
+            margin: 8px 0 5px;
+        }
+
+        .welcome h1 span {
+            color: #8b5cf6;
+        }
+
+        .welcome p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* ===== Buttons ===== */
+        .primary-btn,
+        .secondary-btn {
+            border: 0;
+            border-radius: 10px;
+            padding: 11px 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .primary-btn {
+            color: white;
+            background: linear-gradient(110deg, #6254e7, #8952e8);
+            box-shadow: 0 6px 14px #6554e733;
+        }
+
+        .primary-btn:hover {
+            filter: brightness(1.06);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.3);
+        }
+
+        .secondary-btn {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .danger-btn {
+            border: 0;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            background: #fff0f2;
+            color: #df5268;
+            font-size: 11px;
+        }
+
+        .danger-btn:hover {
+            background: #ffe3e7;
+        }
+
+        body.dark .danger-btn {
+            background: #3d1c24;
+            color: #fca5b0;
+        }
+
+        /* ===== Stat Cards ===== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 19px;
+        }
+
+        .stat-card {
+            padding: 19px;
+            border-radius: 16px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:after {
+            content: "";
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            right: -35px;
+            bottom: -62px;
+            background: var(--tint);
+            opacity: .7;
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-icon {
+            width: 39px;
+            height: 39px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: var(--tint);
+            color: var(--accent);
+            font-size: 19px;
+        }
+
+        .stat-value {
+            font-size: 27px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-top: 14px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .stat-foot {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 12px;
+        }
+
+        /* ===== Panels ===== */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 19px;
+            box-shadow: var(--shadow);
+            min-width: 0;
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 17px;
+        }
+
+        .panel h3 {
+            font-size: 14px;
+            margin: 0;
+            letter-spacing: -.2px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .link-btn {
+            border: 0;
+            background: none;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ===== Content Grids ===== */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
+            margin-bottom: 17px;
+        }
+
+        .lower-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 16px;
+        }
+
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* ===== Quick Actions ===== */
+        .quick-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+        }
+
+        .quick-btn {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface2);
+            padding: 13px 8px;
+            cursor: pointer;
+            text-align: center;
+            color: var(--text);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .quick-btn span {
+            display: block;
+            font-size: 21px;
+            color: var(--primary);
+            margin-bottom: 7px;
+        }
+
+        .quick-btn:hover {
+            border-color: #b9b0ff;
+            background: #f2efff;
+        }
+
+        /* ===== Entry / Booking List ===== */
+        .entry-list {
+            display: grid;
+            gap: 0;
+        }
+
+        .entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .entry:last-child {
+            border: 0;
+        }
+
+        .entry-icon {
+            width: 31px;
+            height: 31px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            background: #e8faef;
+            color: #13a765;
+            font-size: 16px;
+        }
+
+        .entry-icon.out {
+            background: #fff0f2;
+            color: #e65b70;
+        }
+
+        .entry-icon.blue {
+            background: #e8effa;
+            color: #3b7ae8;
+        }
+
+        .entry-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .entry-info b {
+            font-size: 11px;
+            display: block;
+        }
+
+        .entry-info small {
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        /* ===== Status Pills ===== */
+        .pill {
+            padding: 4px 9px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 800;
+        }
+
+        .pill.green {
+            background: #e5f8ee;
+            color: #13975d;
+        }
+
+        .pill.red {
+            background: #fff0f2;
+            color: #df5268;
+        }
+
+        .pill.blue {
+            background: #e8effa;
+            color: #2b6bcb;
+        }
+
+        .pill.amber {
+            background: #fff7e6;
+            color: #b77a12;
+        }
+
+        /* ===== Slot Grid ===== */
+        .slot-legend {
+            display: flex;
+            gap: 13px;
+            flex-wrap: wrap;
+        }
+
+        .slot-legend span {
+            font-size: 10px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .slot-legend i {
+            width: 8px;
+            height: 8px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            padding: 11px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+        }
+
+        .slot {
+            border: 0;
+            border-radius: 9px;
+            padding: 11px 2px;
+            font-weight: 800;
+            font-size: 10px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .slot.available {
+            background: #e1f8eb;
+            color: #13975d;
+        }
+
+        .slot.occupied {
+            background: #e9e4ff;
+            color: #604bd5;
+        }
+
+        .slot.reserved {
+            background: #fff1d6;
+            color: #b77a12;
+        }
+
+        .slot:hover {
+            outline: 2px solid var(--primary);
+        }
+
+        /* ===== Data Tables ===== */
+        .table-wrap {
+            overflow: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .data-table th {
+            text-align: left;
+            font-size: 10px;
+            color: var(--muted);
+            font-weight: 700;
+            padding: 11px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .data-table td {
+            padding: 13px 11px;
+            border-bottom: 1px solid var(--line);
+            font-size: 11px;
+        }
+
+        .data-table tr:last-child td {
+            border: 0;
+        }
+
+        .table-actions button {
+            border: 0;
+            background: #f0edff;
+            color: #6254d9;
+            border-radius: 7px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        /* ===== Toolbar ===== */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            padding: 10px 12px;
+            background: var(--surface);
+            color: var(--text);
+            outline: none;
+            min-width: 200px;
+        }
+
+        .filter-select {
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            padding: 10px 12px;
+            background: var(--surface);
+            color: var(--text);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .search-input:focus,
+        .filter-select:focus,
+        input:focus,
+        select:focus {
+            border-color: #9184ef;
+            box-shadow: 0 0 0 3px #8b5cf622;
+        }
+
+        /* ===== Forms ===== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 13px;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--surface);
+            color: var(--text);
+            outline: none;
+        }
+
+        .field input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ===== Booking Form ===== */
+        .booking-form-card {
+            max-width: 720px;
+        }
+
+        .booking-summary {
+            background: #f8f8ff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 6px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 12px;
+        }
+
+        .summary-row .label {
+            color: var(--muted);
+        }
+
+        .summary-row .value {
+            font-weight: 700;
+        }
+
+        /* ===== Profile Panels ===== */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .profile-form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        /* ===== Password Checklist ===== */
+        .pw-checklist {
+            display: grid;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .pw-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--muted);
+            transition: .2s;
+        }
+
+        .pw-check .check-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--line);
+            display: grid;
+            place-items: center;
+            font-size: 9px;
+            transition: .2s;
+        }
+
+        .pw-check.met {
+            color: #13975d;
+        }
+
+        .pw-check.met .check-icon {
+            border-color: #20b978;
+            background: #e5f8ee;
+            color: #13975d;
+        }
+
+        /* ===== Password Toggle ===== */
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap input {
+            padding-right: 40px;
+        }
+
+        .pw-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 0;
+            background: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+        }
+
+        /* ===== Modal ===== */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: #10112d77;
+            display: none;
+            place-items: center;
+            z-index: 5;
+            padding: 20px;
+        }
+
+        .modal-backdrop.show {
+            display: grid;
+        }
+
+        .modal {
+            width: min(500px, 100%);
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 25px 70px #11123c55;
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .modal h2 {
+            font-size: 20px;
+            margin: 6px 0;
+        }
+
+        .icon-btn {
+            border: 0;
+            background: var(--surface2);
+            border-radius: 9px;
+            width: 32px;
+            height: 32px;
+            font-size: 20px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: end;
+            gap: 9px;
+            margin-top: 22px;
+        }
+
+        /* ===== Confirm Dialog ===== */
+        .confirm-dialog {
+            text-align: center;
+            max-width: 380px;
+        }
+
+        .confirm-dialog h2 {
+            margin: 0 0 8px;
+        }
+
+        .confirm-dialog p {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 0 0 22px;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            right: 25px;
+            bottom: 25px;
+            background: #201e48;
+            color: white;
+            padding: 13px 18px;
+            border-radius: 11px;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: .25s;
+            z-index: 10;
+            pointer-events: none;
+            font-size: 12px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== Loading / Empty States ===== */
+        .loading,
+        .empty {
+            padding: 40px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .empty-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.4;
+        }
+
+        /* ===== Responsive: Tablet ===== */
+        @media (max-width: 1150px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .two-col-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .slot-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        /* ===== Responsive: Mobile ===== */
+        @media (max-width: 760px) {
+            .sidebar {
+                width: 68px;
+                padding: 18px 8px;
+            }
+
+            .brand {
+                padding: 0 4px 30px;
+            }
+
+            .brand > div:last-child,
+            .nav-item:not(.active) {
+                font-size: 0;
+            }
+
+            .brand-mark {
+                width: 45px;
+            }
+
+            .nav-item {
+                justify-content: center;
+                padding: 13px 5px;
+                font-size: 0;
+            }
+
+            .nav-item span {
+                font-size: 20px;
+            }
+
+            .nav-item.active {
+                font-size: 0;
+            }
+
+            .sidebar-bottom .side-note {
+                display: none;
+            }
+
+            .main {
+                margin-left: 68px;
+                width: calc(100% - 68px);
+            }
+
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .top-label,
+            .profile {
+                display: none;
+            }
+
+            .page-wrap {
+                padding: 23px 15px;
+            }
+
+            .welcome {
+                align-items: start;
+                gap: 12px;
+                flex-direction: column;
+            }
+
+            .welcome h1 {
+                font-size: 23px;
+            }
+
+            .stats {
+                gap: 9px;
+            }
+
+            .stat-card {
+                padding: 13px;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
+
+            .content-grid,
+            .lower-grid,
+            .profile-grid,
+            .two-col-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .slot-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar-left {
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== App Shell ===== -->
+    <div class="app-shell">
+
+        <!-- ===== Sidebar ===== -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">P</div>
+                <div>
+                    <b>ParkWise</b>
+                    <small>Smart Parking</small>
+                </div>
+            </div>
+
+            <nav>
+                <button class="nav-item active" data-page="dashboard">
+                    <span>⌂</span> Dashboard
+                </button>
+                <button class="nav-item" data-page="slots">
+                    <span>▤</span> Parking Slots
+                </button>
+                <button class="nav-item" data-page="book">
+                    <span>▦</span> Book Parking
+                </button>
+                <button class="nav-item" data-page="bookings">
+                    <span>▧</span> My Bookings
+                </button>
+                <button class="nav-item" data-page="profile">
+                    <span>◯</span> My Profile
+                </button>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="side-note">
+                    <div class="note-icon">✦</div>
+                    <b>Find & book parking<br>in seconds.</b>
+                    <small>ParkWise customer portal</small>
+                </div>
+                <button class="nav-item" id="themeToggle">
+                    <span>◐</span> Toggle theme
+                </button>
+                <button class="nav-item" id="logoutBtn">
+                    <span>⊗</span> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ===== Main Content ===== -->
+        <main class="main">
+            <header class="topbar">
+                <div class="crumb">
+                    Customer Portal <span>/</span>
+                    <b id="crumbName">Dashboard</b>
+                </div>
+                <div class="top-actions">
+                    <div class="status-dot"></div>
+                    <span class="top-label">Online</span>
+                    <div class="avatar" id="avatarInitial">–</div>
+                    <div class="profile">
+                        <b id="topbarName">Customer</b>
+                        <small>ParkWise Customer</small>
+                    </div>
+                </div>
+            </header>
+
+            <section class="page-wrap">
+                <div class="welcome">
+                    <div>
+                        <div class="eyebrow">CUSTOMER PORTAL</div>
+                        <h1 id="pageTitle">Welcome to ParkWise <span>✦</span></h1>
+                        <p id="pageSubtitle">Find and book parking slots easily.</p>
+                    </div>
+                </div>
+                <div id="pageContent">
+                    <div class="loading">Loading your parking overview…</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ===== Modal ===== -->
+    <div class="modal-backdrop" id="modal">
+        <div class="modal" id="modalContent">
+            <div class="modal-head">
+                <div>
+                    <div class="eyebrow">PARKWISE</div>
+                    <h2 id="modalTitle">Book Parking</h2>
+                </div>
+                <button class="icon-btn" id="closeModal">×</button>
+            </div>
+            <form id="modalForm">
+                <div id="modalFields" class="form-grid"></div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" id="cancelModal">Cancel</button>
+                    <button class="primary-btn" type="submit">Confirm Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== Toast ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== JavaScript ===== -->
+    <script>
+        /* ============================
+         *  Auth Guard
+         * ============================ */
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        /* ============================
+         *  Globals & Helpers
+         * ============================ */
+        let currentPage = 'dashboard';
+        let customerName = 'Customer';
+        let availableSlots = [];
+
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => document.querySelectorAll(s);
+
+        /**
+         * API request helper with auth and error handling
+         */
+        async function request(path, options = {}) {
+            const tkn = localStorage.getItem('access_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(tkn ? { 'Authorization': `Bearer ${tkn}` } : {}),
+            };
+            const res = await fetch('/api' + path, { headers, ...options });
+
+            if (res.status === 401) {
+                localStorage.removeItem('access_token');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            if (!res.ok) {
+                let msg = 'Something went wrong.';
+                try {
+                    const d = await res.json();
+                    msg = d.detail || msg;
+                } catch {}
+                throw new Error(msg);
+            }
+
+            if (res.status === 204) return null;
+            return res.json();
+        }
+
+        /**
+         * Show a toast notification
+         */
+        function toast(message) {
+            const t = $('#toast');
+            t.textContent = message;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        /**
+         * Escape HTML special characters
+         */
+        function escapeHtml(s) {
+            return String(s ?? '')
+                .replace(/[&<>"']/g, c => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[c]));
+        }
+
+        /**
+         * Format a date/time for display
+         */
+        function formatDateTime(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleString([], {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        /**
+         * Format a date for short display (e.g. in booking lists)
+         */
+        function formatDateShort(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleDateString([], {
+                month: 'short',
+                day: 'numeric'
+            }) + ', ' + d.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        /**
+         * Get "now" as a datetime-local input value
+         */
+        function nowLocal() {
+            const d = new Date();
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16);
+        }
+
+        /**
+         * Logout handler
+         */
+        async function logout() {
+            try {
+                await request('/auth/logout', { method: 'POST' });
+            } catch {}
+            localStorage.removeItem('access_token');
+            window.location.href = '/login.html';
+        }
+
+        /**
+         * Build a stat card HTML string
+         */
+        function stat(icon, value, label, foot, tint, accent) {
+            return `
+                <div class="stat-card" style="--tint:${tint};--accent:${accent}">
+                    <div class="stat-top">
+                        <div class="stat-icon">${icon}</div>
+                        <span class="muted" style="font-size:10px">PARKWISE</span>
+                    </div>
+                    <div class="stat-value">${value}</div>
+                    <div class="stat-label">${label}</div>
+                    <div class="stat-foot">${foot}</div>
+                </div>
+            `;
+        }
+
+        /* ============================
+         *  Page Navigation
+         * ============================ */
+        function setPage(page) {
+            currentPage = page;
+
+            /* Update active nav */
+            $$('.nav-item[data-page]').forEach(b => {
+                b.classList.toggle('active', b.dataset.page === page);
+            });
+
+            /* Page metadata */
+            const labels = {
+                dashboard: 'Dashboard',
+                slots: 'Parking Slots',
+                book: 'Book Parking',
+                bookings: 'My Bookings',
+                profile: 'My Profile'
+            };
+
+            const subtitles = {
+                dashboard: 'Find and book parking slots easily.',
+                slots: 'Browse available parking spaces in real time.',
+                book: 'Reserve your parking spot in advance.',
+                bookings: 'View and manage your parking reservations.',
+                profile: 'Manage your account and security settings.'
+            };
+
+            $('#crumbName').textContent = labels[page];
+
+            $('#pageTitle').innerHTML = page === 'dashboard'
+                ? `Welcome back, ${escapeHtml(customerName)} <span>✦</span>`
+                : labels[page];
+
+            $('#pageSubtitle').textContent = subtitles[page];
+
+            renderPage();
+        }
+
+        /**
+         * Render the current page content
+         */
+        async function renderPage() {
+            const root = $('#pageContent');
+            root.innerHTML = '<div class="loading">Loading…</div>';
+
+            try {
+                switch (currentPage) {
+                    case 'dashboard':
+                        await renderDashboard(root);
+                        break;
+                    case 'slots':
+                        await renderSlots(root);
+                        break;
+                    case 'book':
+                        await renderBookForm(root);
+                        break;
+                    case 'bookings':
+                        await renderBookings(root);
+                        break;
+                    case 'profile':
+                        await renderProfile(root);
+                        break;
+                }
+            } catch (e) {
+                root.innerHTML = `
+                    <div class="panel empty">
+                        Could not load data: ${escapeHtml(e.message)}
+                        <br><br>
+                        <button class="primary-btn" onclick="renderPage()">Try again</button>
+                    </div>
+                `;
+            }
+        }
+
+        /* ============================
+         *  Page 1: Customer Dashboard
+         * ============================ */
+        async function renderDashboard(root) {
+            const [dashboard, bookings] = await Promise.all([
+                request('/customer/dashboard'),
+                request('/customer/bookings')
+            ]);
+
+            const totalBookings = bookings ? bookings.length : 0;
+            const upcoming = dashboard.upcoming_bookings || [];
+            const activity = dashboard.recent_activity || [];
+
+            root.innerHTML = `
+                <!-- Stat Cards -->
+                <div class="stats">
+                    ${stat(
+                        '▤',
+                        dashboard.total_available,
+                        'Total Available Slots',
+                        'Across all parking zones',
+                        '#e7f9ef',
+                        '#1db477'
+                    )}
+                    ${stat(
+                        '🚗',
+                        dashboard.available_car,
+                        'Available Car Slots',
+                        'Four-wheeler parking',
+                        '#e9f3ff',
+                        '#2688e8'
+                    )}
+                    ${stat(
+                        '🏍',
+                        dashboard.available_bike,
+                        'Available Bike Slots',
+                        'Two-wheeler parking',
+                        '#f0eaff',
+                        '#8055e8'
+                    )}
+                    ${stat(
+                        '▦',
+                        totalBookings,
+                        'My Total Bookings',
+                        'All your reservations',
+                        '#fff2e5',
+                        '#e89a32'
+                    )}
+                </div>
+
+                <!-- Two Column: Upcoming Bookings + Quick Actions -->
+                <div class="content-grid">
+                    <!-- Upcoming Bookings Panel -->
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Upcoming Bookings</h3>
+                            <button class="link-btn" onclick="setPage('bookings')">
+                                View all →
+                            </button>
+                        </div>
+                        <div class="entry-list">
+                            ${upcoming.length > 0
+                                ? upcoming.slice(0, 5).map(b => `
+                                    <div class="entry">
+                                        <div class="entry-icon blue">▦</div>
+                                        <div class="entry-info">
+                                            <b>${escapeHtml(b.slot_code || b.slot || '—')} · ${escapeHtml(b.vehicle_number || '')}</b>
+                                            <small>${formatDateShort(b.start_time)} → ${formatDateShort(b.end_time)}</small>
+                                        </div>
+                                        <span class="pill green">${escapeHtml(b.status || 'confirmed')}</span>
+                                    </div>
+                                `).join('')
+                                : `
+                                    <div class="empty">
+                                        <div class="empty-icon">📅</div>
+                                        No upcoming bookings.
+                                        <br><small>Book a slot to get started!</small>
+                                    </div>
+                                `
+                            }
+                        </div>
+                    </section>
+
+                    <!-- Quick Actions Panel -->
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Quick Actions</h3>
+                            <span class="muted">Shortcuts</span>
+                        </div>
+                        <div class="quick-grid">
+                            <button class="quick-btn" onclick="setPage('slots')">
+                                <span>▤</span>
+                                Find Parking Slot
+                            </button>
+                            <button class="quick-btn" onclick="setPage('book')">
+                                <span>▦</span>
+                                Book a Slot
+                            </button>
+                            <button class="quick-btn" onclick="setPage('bookings')">
+                                <span>▧</span>
+                                My Bookings
+                            </button>
+                            <button class="quick-btn" onclick="setPage('profile')">
+                                <span>◯</span>
+                                My Profile
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Recent Activity -->
+                ${activity.length > 0 ? `
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Recent Activity</h3>
+                            <span class="muted">Latest updates</span>
+                        </div>
+                        <div class="entry-list">
+                            ${activity.slice(0, 5).map(a => `
+                                <div class="entry">
+                                    <div class="entry-icon ${a.type === 'cancellation' ? 'out' : ''}">
+                                        ${a.type === 'cancellation' ? '✕' : '✓'}
+                                    </div>
+                                    <div class="entry-info">
+                                        <b>${escapeHtml(a.description || a.message || 'Activity')}</b>
+                                        <small>${a.time ? formatDateShort(a.time) : ''}</small>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+                ` : ''}
+            `;
+        }
+
+        /* ============================
+         *  Page 2: Parking Slots
+         * ============================ */
+        async function renderSlots(root) {
+            const slots = await request('/customer/slots');
+            availableSlots = slots.filter(s => s.status === 'available');
+
+            root.innerHTML = `
+                <section class="panel">
+                    <!-- Toolbar -->
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <input
+                                class="search-input"
+                                id="slotSearch"
+                                placeholder="Search by slot code…"
+                                type="text"
+                            >
+                            <select class="filter-select" id="slotTypeFilter">
+                                <option value="">All Types</option>
+                                <option value="car">Car</option>
+                                <option value="bike">Bike</option>
+                            </select>
+                            <select class="filter-select" id="slotStatusFilter">
+                                <option value="">All Statuses</option>
+                                <option value="available">Available</option>
+                                <option value="occupied">Occupied</option>
+                            </select>
+                        </div>
+                        <div class="slot-legend">
+                            <span>
+                                <i style="background:#20b978"></i> Available
+                            </span>
+                            <span>
+                                <i style="background:#8065ed"></i> Occupied
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Slot Grid -->
+                    <div class="slot-grid" id="slotGrid">
+                        ${renderSlotButtons(slots)}
+                    </div>
+
+                    <div style="margin-top:14px;text-align:center">
+                        <small class="muted" id="slotCount">
+                            ${slots.length} total slots · ${availableSlots.length} available
+                        </small>
+                    </div>
+                </section>
+            `;
+
+            /* Filter and search event listeners */
+            const filterSlots = () => {
+                const search = ($('#slotSearch')?.value || '').toLowerCase();
+                const typeFilter = $('#slotTypeFilter')?.value || '';
+                const statusFilter = $('#slotStatusFilter')?.value || '';
+
+                const filtered = slots.filter(s => {
+                    const matchSearch = !search || s.code.toLowerCase().includes(search);
+                    const matchType = !typeFilter || s.slot_type === typeFilter;
+                    const matchStatus = !statusFilter || s.status === statusFilter;
+                    return matchSearch && matchType && matchStatus;
+                });
+
+                $('#slotGrid').innerHTML = renderSlotButtons(filtered);
+                const filteredAvailable = filtered.filter(s => s.status === 'available').length;
+                $('#slotCount').textContent =
+                    `${filtered.length} total slots · ${filteredAvailable} available`;
+            };
+
+            $('#slotSearch').addEventListener('input', filterSlots);
+            $('#slotTypeFilter').addEventListener('change', filterSlots);
+            $('#slotStatusFilter').addEventListener('change', filterSlots);
+        }
+
+        /**
+         * Render the slot button grid HTML
+         */
+        function renderSlotButtons(slots) {
+            if (!slots || slots.length === 0) {
+                return '<div class="empty" style="grid-column:1/-1">No slots match your filters.</div>';
+            }
+
+            return slots.map(s => `
+                <button
+                    class="slot ${s.status}"
+                    title="${escapeHtml(s.zone || '')} · ${escapeHtml(s.slot_type)} · ${s.status}"
+                    onclick="${s.status === 'available'
+                        ? `openBookingModal(${s.id}, '${escapeHtml(s.code)}', '${escapeHtml(s.slot_type)}')`
+                        : `toast('This slot is currently ${s.status}.')`
+                    }"
+                >
+                    ${escapeHtml(s.code)}
+                    <br>
+                    <small>${s.slot_type}</small>
+                </button>
+            `).join('');
+        }
+
+        /**
+         * Open booking modal pre-filled with selected slot
+         */
+        function openBookingModal(slotId, slotCode, slotType) {
+            $('#modalTitle').textContent = 'Book Parking Slot';
+            $('#modalFields').innerHTML = `
+                <div class="field full">
+                    <label>Selected Slot</label>
+                    <input type="text" value="${slotCode} (${slotType})" disabled>
+                    <input type="hidden" name="slot_id" value="${slotId}">
+                </div>
+                <div class="field full">
+                    <label>Vehicle Registration Number</label>
+                    <input
+                        name="vehicle_number"
+                        type="text"
+                        placeholder="e.g. DL10AB1234"
+                        required
+                        pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9 -]{4,20}"
+                        title="Enter a valid vehicle registration number"
+                    >
+                </div>
+                <div class="field">
+                    <label>Start Date & Time</label>
+                    <input
+                        name="start_time"
+                        type="datetime-local"
+                        min="${nowLocal()}"
+                        required
+                    >
+                </div>
+                <div class="field">
+                    <label>End Date & Time</label>
+                    <input
+                        name="end_time"
+                        type="datetime-local"
+                        required
+                    >
+                </div>
+            `;
+
+            /* Link start_time to end_time min */
+            const startInput = $('#modalFields [name="start_time"]');
+            const endInput = $('#modalFields [name="end_time"]');
+            startInput.addEventListener('change', () => {
+                endInput.min = startInput.value;
+                if (endInput.value && endInput.value < startInput.value) {
+                    endInput.value = startInput.value;
+                }
+            });
+
+            $('#modal').classList.add('show');
+
+            $('#modalForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                const data = Object.fromEntries(fd.entries());
+
+                try {
+                    await request('/customer/bookings', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            vehicle_number: data.vehicle_number,
+                            slot_id: Number(data.slot_id),
+                            start_time: new Date(data.start_time).toISOString(),
+                            end_time: new Date(data.end_time).toISOString()
+                        })
+                    });
+                    $('#modal').classList.remove('show');
+                    toast('Booking confirmed successfully!');
+                    setPage('bookings');
+                } catch (err) {
+                    toast(err.message);
+                }
+            };
+        }
+
+        /* ============================
+         *  Page 3: Book Parking (Form)
+         * ============================ */
+        async function renderBookForm(root) {
+            const slots = await request('/customer/slots?status=available');
+            availableSlots = slots || [];
+
+            root.innerHTML = `
+                <section class="panel booking-form-card">
+                    <div class="panel-head">
+                        <h3>Book a Parking Slot</h3>
+                        <span class="muted">${availableSlots.length} slots available</span>
+                    </div>
+
+                    <form id="bookingForm">
+                        <div class="form-grid">
+                            <!-- Vehicle Number -->
+                            <div class="field full">
+                                <label>Vehicle Registration Number</label>
+                                <input
+                                    name="vehicle_number"
+                                    type="text"
+                                    placeholder="e.g. DL10AB1234"
+                                    required
+                                    id="bfVehicle"
+                                    pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9 -]{4,20}"
+                                    title="Enter a valid vehicle registration number"
+                                >
+                            </div>
+
+                            <!-- Slot Selection -->
+                            <div class="field full">
+                                <label>Select Parking Slot</label>
+                                <select name="slot_id" required id="bfSlot">
+                                    <option value="">— Choose an available slot —</option>
+                                    ${availableSlots.map(s => `
+                                        <option value="${s.id}">
+                                            ${escapeHtml(s.code)} — ${s.slot_type.toUpperCase()}${s.zone ? ' · ' + escapeHtml(s.zone) : ''}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+
+                            <!-- Start Time -->
+                            <div class="field">
+                                <label>Start Date & Time</label>
+                                <input
+                                    name="start_time"
+                                    type="datetime-local"
+                                    required
+                                    id="bfStart"
+                                    min="${nowLocal()}"
+                                >
+                            </div>
+
+                            <!-- End Time -->
+                            <div class="field">
+                                <label>End Date & Time</label>
+                                <input
+                                    name="end_time"
+                                    type="datetime-local"
+                                    required
+                                    id="bfEnd"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Booking Summary -->
+                        <div class="booking-summary" id="bookingSummary" style="margin-top:20px">
+                            <div style="font-weight:700;margin-bottom:10px;font-size:13px">
+                                Booking Summary
+                            </div>
+                            <div class="summary-row">
+                                <span class="label">Vehicle</span>
+                                <span class="value" id="sumVehicle">—</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="label">Slot</span>
+                                <span class="value" id="sumSlot">—</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="label">Start</span>
+                                <span class="value" id="sumStart">—</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="label">End</span>
+                                <span class="value" id="sumEnd">—</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="label">Duration</span>
+                                <span class="value" id="sumDuration">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div style="margin-top:22px;display:flex;justify-content:flex-end;gap:10px">
+                            <button
+                                type="button"
+                                class="secondary-btn"
+                                onclick="setPage('slots')"
+                            >
+                                Browse Slots
+                            </button>
+                            <button type="submit" class="primary-btn" id="bfSubmit">
+                                Confirm Booking
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            `;
+
+            /* Live summary updates */
+            const updateSummary = () => {
+                const vehicle = $('#bfVehicle').value;
+                const slotSelect = $('#bfSlot');
+                const slotText = slotSelect.options[slotSelect.selectedIndex]?.text || '—';
+                const start = $('#bfStart').value;
+                const end = $('#bfEnd').value;
+
+                $('#sumVehicle').textContent = vehicle || '—';
+                $('#sumSlot').textContent = slotSelect.value ? slotText : '—';
+                $('#sumStart').textContent = start ? formatDateTime(start) : '—';
+                $('#sumEnd').textContent = end ? formatDateTime(end) : '—';
+
+                if (start && end) {
+                    const diffMs = new Date(end) - new Date(start);
+                    if (diffMs > 0) {
+                        const hours = Math.floor(diffMs / 3600000);
+                        const mins = Math.floor((diffMs % 3600000) / 60000);
+                        $('#sumDuration').textContent =
+                            hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                    } else {
+                        $('#sumDuration').textContent = 'Invalid range';
+                    }
+                } else {
+                    $('#sumDuration').textContent = '—';
+                }
+            };
+
+            $('#bfVehicle').addEventListener('input', updateSummary);
+            $('#bfSlot').addEventListener('change', updateSummary);
+            $('#bfStart').addEventListener('change', () => {
+                const startVal = $('#bfStart').value;
+                $('#bfEnd').min = startVal;
+                if ($('#bfEnd').value && $('#bfEnd').value < startVal) {
+                    $('#bfEnd').value = startVal;
+                }
+                updateSummary();
+            });
+            $('#bfEnd').addEventListener('change', updateSummary);
+
+            /* Form submission */
+            $('#bookingForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                const data = Object.fromEntries(fd.entries());
+
+                const startDt = new Date(data.start_time);
+                const endDt = new Date(data.end_time);
+
+                if (endDt <= startDt) {
+                    toast('End time must be after start time.');
+                    return;
+                }
+
+                const btn = $('#bfSubmit');
+                btn.disabled = true;
+                btn.textContent = 'Booking…';
+
+                try {
+                    await request('/customer/bookings', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            vehicle_number: data.vehicle_number,
+                            slot_id: Number(data.slot_id),
+                            start_time: startDt.toISOString(),
+                            end_time: endDt.toISOString()
+                        })
+                    });
+                    toast('Booking confirmed successfully!');
+                    setPage('bookings');
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = 'Confirm Booking';
+                    toast(err.message);
+                }
+            };
+        }
+
+        /* ============================
+         *  Page 4: My Bookings
+         * ============================ */
+        async function renderBookings(root) {
+            const bookings = await request('/customer/bookings');
+
+            root.innerHTML = `
+                <section class="panel">
+                    <div class="panel-head">
+                        <h3>My Bookings</h3>
+                        <button class="primary-btn" onclick="setPage('book')">
+                            ＋ New Booking
+                        </button>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>BOOKING ID</th>
+                                    <th>SLOT</th>
+                                    <th>VEHICLE</th>
+                                    <th>START TIME</th>
+                                    <th>END TIME</th>
+                                    <th>STATUS</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${bookings && bookings.length > 0
+                                    ? bookings.map(b => {
+                                        const statusClass = b.status === 'confirmed' ? 'green'
+                                            : b.status === 'cancelled' ? 'red'
+                                            : b.status === 'completed' ? 'blue'
+                                            : 'amber';
+
+                                        const canCancel = b.status === 'confirmed'
+                                            && new Date(b.start_time) > new Date();
+
+                                        return `
+                                            <tr>
+                                                <td><b>#BK-${b.id}</b></td>
+                                                <td>${escapeHtml(b.slot_code || '—')}</td>
+                                                <td>${escapeHtml(b.vehicle_number)}</td>
+                                                <td>${formatDateTime(b.start_time)}</td>
+                                                <td>${formatDateTime(b.end_time)}</td>
+                                                <td>
+                                                    <span class="pill ${statusClass}">
+                                                        ${escapeHtml(b.status)}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    ${canCancel
+                                                        ? `<button
+                                                              class="danger-btn"
+                                                              onclick="confirmCancel(${b.id})"
+                                                           >
+                                                               Cancel
+                                                           </button>`
+                                                        : '<span class="muted">—</span>'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')
+                                    : `
+                                        <tr>
+                                            <td colspan="7" class="empty">
+                                                <div class="empty-icon">📋</div>
+                                                No bookings yet. Book your first parking slot!
+                                            </td>
+                                        </tr>
+                                    `
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        }
+
+        /**
+         * Show cancel confirmation dialog in modal
+         */
+        function confirmCancel(bookingId) {
+            $('#modalContent').innerHTML = `
+                <div class="confirm-dialog">
+                    <div style="font-size:40px;margin-bottom:14px">⚠️</div>
+                    <h2>Cancel Booking?</h2>
+                    <p>
+                        Are you sure you want to cancel booking
+                        <b>#BK-${bookingId}</b>?
+                        This action cannot be undone.
+                    </p>
+                    <div class="confirm-actions">
+                        <button class="secondary-btn" onclick="closeConfirmModal()">
+                            Keep Booking
+                        </button>
+                        <button class="danger-btn" style="padding:11px 20px;font-size:13px"
+                            onclick="cancelBooking(${bookingId})">
+                            Yes, Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#modal').classList.add('show');
+        }
+
+        /**
+         * Close the confirm modal and restore default modal content
+         */
+        function closeConfirmModal() {
+            $('#modal').classList.remove('show');
+
+            /* Restore the default modal structure */
+            setTimeout(() => {
+                $('#modalContent').innerHTML = `
+                    <div class="modal-head">
+                        <div>
+                            <div class="eyebrow">PARKWISE</div>
+                            <h2 id="modalTitle">Book Parking</h2>
+                        </div>
+                        <button class="icon-btn" id="closeModal" onclick="$('#modal').classList.remove('show')">×</button>
+                    </div>
+                    <form id="modalForm">
+                        <div id="modalFields" class="form-grid"></div>
+                        <div class="modal-actions">
+                            <button type="button" class="secondary-btn" id="cancelModal"
+                                onclick="$('#modal').classList.remove('show')">Cancel</button>
+                            <button class="primary-btn" type="submit">Confirm Booking</button>
+                        </div>
+                    </form>
+                `;
+            }, 300);
+        }
+
+        /**
+         * Cancel a booking via API
+         */
+        async function cancelBooking(bookingId) {
+            try {
+                await request(`/customer/bookings/${bookingId}/cancel`, {
+                    method: 'POST'
+                });
+                $('#modal').classList.remove('show');
+                toast('Booking cancelled successfully.');
+                /* Restore default modal structure then re-render */
+                closeConfirmModal();
+                renderPage();
+            } catch (err) {
+                toast(err.message);
+            }
+        }
+
+        /* ============================
+         *  Page 5: My Profile
+         * ============================ */
+        async function renderProfile(root) {
+            const profile = await request('/customer/profile');
+
+            root.innerHTML = `
+                <div class="profile-grid">
+                    <!-- Left Panel: Profile Information -->
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Profile Information</h3>
+                        </div>
+                        <form id="profileForm">
+                            <div class="profile-form-grid">
+                                <div class="field">
+                                    <label>Full Name</label>
+                                    <input
+                                        name="full_name"
+                                        type="text"
+                                        value="${escapeHtml(profile.full_name || '')}"
+                                        required
+                                        minlength="2"
+                                        maxlength="100"
+                                    >
+                                </div>
+                                <div class="field">
+                                    <label>Email Address</label>
+                                    <input
+                                        type="email"
+                                        value="${escapeHtml(profile.email || '')}"
+                                        disabled
+                                        title="Email cannot be changed"
+                                    >
+                                </div>
+                                <div class="field">
+                                    <label>Phone Number</label>
+                                    <input
+                                        name="phone"
+                                        type="text"
+                                        value="${escapeHtml(profile.phone || '')}"
+                                        placeholder="Enter your phone number"
+                                        pattern="[0-9]{10,15}"
+                                        title="Enter a valid phone number"
+                                    >
+                                </div>
+                                <div class="field">
+                                    <label>Role</label>
+                                    <input
+                                        type="text"
+                                        value="${escapeHtml(profile.role || 'customer')}"
+                                        disabled
+                                    >
+                                </div>
+                                <div style="margin-top:6px">
+                                    <button type="submit" class="primary-btn" id="profileSaveBtn">
+                                        Update Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </section>
+
+                    <!-- Right Panel: Change Password -->
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h3>Change Password</h3>
+                        </div>
+                        <form id="passwordForm">
+                            <div class="profile-form-grid">
+                                <!-- Current Password -->
+                                <div class="field">
+                                    <label>Current Password</label>
+                                    <div class="password-wrap">
+                                        <input
+                                            name="current_password"
+                                            type="password"
+                                            required
+                                            id="pwCurrent"
+                                            placeholder="Enter current password"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="pw-toggle"
+                                            onclick="togglePassword('pwCurrent', this)"
+                                            title="Show/hide password"
+                                        >👁</button>
+                                    </div>
+                                </div>
+
+                                <!-- New Password -->
+                                <div class="field">
+                                    <label>New Password</label>
+                                    <div class="password-wrap">
+                                        <input
+                                            name="new_password"
+                                            type="password"
+                                            required
+                                            id="pwNew"
+                                            placeholder="Enter new password"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="pw-toggle"
+                                            onclick="togglePassword('pwNew', this)"
+                                            title="Show/hide password"
+                                        >👁</button>
+                                    </div>
+                                </div>
+
+                                <!-- Confirm New Password -->
+                                <div class="field">
+                                    <label>Confirm New Password</label>
+                                    <div class="password-wrap">
+                                        <input
+                                            type="password"
+                                            required
+                                            id="pwConfirm"
+                                            placeholder="Confirm new password"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="pw-toggle"
+                                            onclick="togglePassword('pwConfirm', this)"
+                                            title="Show/hide password"
+                                        >👁</button>
+                                    </div>
+                                </div>
+
+                                <!-- Password Checklist -->
+                                <div class="pw-checklist" id="pwChecklist">
+                                    <div class="pw-check" data-rule="length">
+                                        <span class="check-icon">—</span>
+                                        At least 8 characters
+                                    </div>
+                                    <div class="pw-check" data-rule="upper">
+                                        <span class="check-icon">—</span>
+                                        One uppercase letter
+                                    </div>
+                                    <div class="pw-check" data-rule="lower">
+                                        <span class="check-icon">—</span>
+                                        One lowercase letter
+                                    </div>
+                                    <div class="pw-check" data-rule="digit">
+                                        <span class="check-icon">—</span>
+                                        One digit
+                                    </div>
+                                    <div class="pw-check" data-rule="special">
+                                        <span class="check-icon">—</span>
+                                        One special character
+                                    </div>
+                                </div>
+
+                                <div style="margin-top:6px">
+                                    <button type="submit" class="primary-btn" id="pwSaveBtn">
+                                        Change Password
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            `;
+
+            /* Profile form submit */
+            $('#profileForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                const data = Object.fromEntries(fd.entries());
+
+                const btn = $('#profileSaveBtn');
+                btn.disabled = true;
+                btn.textContent = 'Saving…';
+
+                try {
+                    await request('/customer/profile', {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                            full_name: data.full_name,
+                            phone: data.phone
+                        })
+                    });
+                    toast('Profile updated successfully!');
+
+                    /* Update topbar name */
+                    customerName = data.full_name;
+                    $('#topbarName').textContent = customerName;
+                    $('#avatarInitial').textContent = customerName.charAt(0).toUpperCase();
+                    $('#pageTitle').innerHTML =
+                        currentPage === 'dashboard'
+                            ? `Welcome back, ${escapeHtml(customerName)} <span>✦</span>`
+                            : 'My Profile';
+                } catch (err) {
+                    toast(err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Update Profile';
+                }
+            };
+
+            /* Password strength checklist */
+            const pwInput = $('#pwNew');
+            pwInput.addEventListener('input', () => {
+                const val = pwInput.value;
+                const rules = {
+                    length: val.length >= 8,
+                    upper: /[A-Z]/.test(val),
+                    lower: /[a-z]/.test(val),
+                    digit: /[0-9]/.test(val),
+                    special: /[^A-Za-z0-9]/.test(val)
+                };
+
+                Object.keys(rules).forEach(rule => {
+                    const el = $(`#pwChecklist .pw-check[data-rule="${rule}"]`);
+                    if (el) {
+                        el.classList.toggle('met', rules[rule]);
+                        el.querySelector('.check-icon').textContent =
+                            rules[rule] ? '✓' : '—';
+                    }
+                });
+            });
+
+            /* Password form submit */
+            $('#passwordForm').onsubmit = async (e) => {
+                e.preventDefault();
+
+                const currentPw = $('#pwCurrent').value;
+                const newPw = $('#pwNew').value;
+                const confirmPw = $('#pwConfirm').value;
+
+                /* Client-side validations */
+                if (newPw !== confirmPw) {
+                    toast('New passwords do not match.');
+                    return;
+                }
+
+                if (newPw.length < 8) {
+                    toast('Password must be at least 8 characters.');
+                    return;
+                }
+
+                if (!/[A-Z]/.test(newPw) || !/[a-z]/.test(newPw) ||
+                    !/[0-9]/.test(newPw) || !/[^A-Za-z0-9]/.test(newPw)) {
+                    toast('Password does not meet all requirements.');
+                    return;
+                }
+
+                const btn = $('#pwSaveBtn');
+                btn.disabled = true;
+                btn.textContent = 'Changing…';
+
+                try {
+                    await request('/customer/change-password', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            current_password: currentPw,
+                            new_password: newPw
+                        })
+                    });
+                    toast('Password changed successfully!');
+                    $('#pwCurrent').value = '';
+                    $('#pwNew').value = '';
+                    $('#pwConfirm').value = '';
+
+                    /* Reset checklist */
+                    $$('#pwChecklist .pw-check').forEach(el => {
+                        el.classList.remove('met');
+                        el.querySelector('.check-icon').textContent = '—';
+                    });
+                } catch (err) {
+                    toast(err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Change Password';
+                }
+            };
+        }
+
+        /**
+         * Toggle password field visibility
+         */
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁';
+            }
+        }
+
+        /* ============================
+         *  Modal Controls
+         * ============================ */
+        $('#closeModal').onclick = () => $('#modal').classList.remove('show');
+        $('#cancelModal').onclick = () => $('#modal').classList.remove('show');
+
+        /* Close modal on backdrop click */
+        $('#modal').addEventListener('click', (e) => {
+            if (e.target === $('#modal')) {
+                $('#modal').classList.remove('show');
+            }
+        });
+
+        /* ============================
+         *  Theme Toggle
+         * ============================ */
+        $('#themeToggle').onclick = () => {
+            document.body.classList.toggle('dark');
+            localStorage.setItem(
+                'parkwise-theme',
+                document.body.classList.contains('dark') ? 'dark' : 'light'
+            );
+        };
+
+        /* Apply saved theme */
+        if (localStorage.getItem('parkwise-theme') === 'dark') {
+            document.body.classList.add('dark');
+        }
+
+        /* ============================
+         *  Logout
+         * ============================ */
+        $('#logoutBtn').onclick = logout;
+
+        /* ============================
+         *  Navigation Handlers
+         * ============================ */
+        $$('.nav-item[data-page]').forEach(b => {
+            b.addEventListener('click', () => setPage(b.dataset.page));
+        });
+
+        /* ============================
+         *  Initialization
+         * ============================ */
+        async function init() {
+            try {
+                /* Load customer info for topbar */
+                const me = await request('/auth/me');
+                customerName = me.full_name || me.email || 'Customer';
+                $('#topbarName').textContent = customerName;
+                $('#avatarInitial').textContent = customerName.charAt(0).toUpperCase();
+
+                /* Load the default page */
+                setPage('dashboard');
+            } catch (e) {
+                const root = $('#pageContent');
+                root.innerHTML = `
+                    <div class="panel empty">
+                        Could not connect to the ParkWise API: ${escapeHtml(e.message)}
+                        <br><br>
+                        Check that the server is running, then refresh this page.
+                    </div>
+                `;
+                toast('API connection failed.');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
+
