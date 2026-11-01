@@ -1,23 +1,41 @@
 """FastAPI application for the ParkWise parking management system."""
 
+import os
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import Date, cast, func
 from sqlalchemy.orm import Session, joinedload
 
 from . import models, schemas
-from .database import Base, engine, get_db
-
+from .auth import get_current_user, require_admin
+from .database import Base, engine, get_db, run_migrations
+from .routes import auth_routes, customer_routes
 
 Base.metadata.create_all(bind=engine)
+run_migrations()
 
 app = FastAPI(
     title="ParkWise API",
     version="1.0.0",
     description="Database-driven parking management system.",
 )
+
+# CORS middleware for development and deployment flexibility
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include dedicated modular routers
+app.include_router(auth_routes.router)
+app.include_router(customer_routes.router)
 
 
 @app.get("/api/health", tags=["System"])
@@ -26,9 +44,17 @@ def health_check():
     return {"status": "ok", "service": "ParkWise API"}
 
 
+# ---------------------------------------------------------------------------
+# Admin Dashboard
+# ---------------------------------------------------------------------------
+
+
 @app.get("/api/dashboard", tags=["Dashboard"])
-def get_dashboard(db: Session = Depends(get_db)):
-    """Return dashboard metrics calculated from persisted database records."""
+def get_dashboard(
+    current_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Return dashboard metrics calculated from persisted database records (Admin only)."""
     total_slots = db.query(models.ParkingSlot).count()
     occupied_slots = db.query(models.ParkingSlot).filter(
         models.ParkingSlot.status == "occupied"
@@ -91,11 +117,17 @@ def get_dashboard(db: Session = Depends(get_db)):
     }
 
 
+# ---------------------------------------------------------------------------
+# Slots Management
+# ---------------------------------------------------------------------------
+
+
 @app.get("/api/slots", response_model=list[schemas.SlotOut], tags=["Slots"])
 def list_slots(
     slot_status: str | None = None,
     db: Session = Depends(get_db),
 ):
+    """List parking slots. Open to authenticated or public inquiries."""
     query = db.query(models.ParkingSlot)
     if slot_status:
         query = query.filter(models.ParkingSlot.status == slot_status)
@@ -110,8 +142,10 @@ def list_slots(
 )
 def create_slot(
     data: schemas.SlotCreate,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Create a new parking slot (Admin only)."""
     existing = db.query(models.ParkingSlot).filter(
         models.ParkingSlot.code == data.code
     ).first()
@@ -137,8 +171,10 @@ def create_slot(
 def update_slot(
     slot_id: int,
     data: schemas.SlotCreate,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Update parking slot details (Admin only)."""
     slot = db.get(models.ParkingSlot, slot_id)
     if not slot:
         raise HTTPException(404, "Parking slot not found.")
@@ -169,7 +205,12 @@ def update_slot(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Slots"],
 )
-def delete_slot(slot_id: int, db: Session = Depends(get_db)):
+def delete_slot(
+    slot_id: int,
+    current_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a parking slot (Admin only)."""
     slot = db.get(models.ParkingSlot, slot_id)
     if not slot:
         raise HTTPException(404, "Parking slot not found.")
@@ -197,6 +238,11 @@ def delete_slot(slot_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
+# ---------------------------------------------------------------------------
+# Vehicle Management
+# ---------------------------------------------------------------------------
+
+
 @app.get(
     "/api/vehicles",
     response_model=list[schemas.VehicleOut],
@@ -204,8 +250,10 @@ def delete_slot(slot_id: int, db: Session = Depends(get_db)):
 )
 def list_vehicles(
     search: str | None = None,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """List registered vehicles (Admin only)."""
     query = db.query(models.Vehicle)
     if search:
         term = f"%{search.strip()}%"
@@ -224,8 +272,10 @@ def list_vehicles(
 )
 def create_vehicle(
     data: schemas.VehicleCreate,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Register a new vehicle (Admin only)."""
     duplicate = db.query(models.Vehicle).filter(
         models.Vehicle.registration_number == data.registration_number
     ).first()
@@ -248,8 +298,10 @@ def create_vehicle(
 def update_vehicle(
     vehicle_id: int,
     data: schemas.VehicleCreate,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Update vehicle registration details (Admin only)."""
     vehicle = db.get(models.Vehicle, vehicle_id)
     if not vehicle:
         raise HTTPException(404, "Vehicle not found.")
@@ -274,7 +326,12 @@ def update_vehicle(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Vehicles"],
 )
-def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+def delete_vehicle(
+    vehicle_id: int,
+    current_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a vehicle record (Admin only)."""
     vehicle = db.get(models.Vehicle, vehicle_id)
     if not vehicle:
         raise HTTPException(404, "Vehicle not found.")
@@ -293,12 +350,19 @@ def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
+# ---------------------------------------------------------------------------
+# Parking Check-In / Check-Out
+# ---------------------------------------------------------------------------
+
+
 @app.post("/api/check-in", tags=["Parking"])
 def check_in_vehicle(
     vehicle_number: str,
     slot_code: str,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Check in a vehicle into an available slot (Admin only)."""
     try:
         registration = schemas.clean_registration(vehicle_number)
     except ValueError as error:
@@ -350,8 +414,10 @@ def check_in_vehicle(
 @app.post("/api/check-out/{session_id}", tags=["Parking"])
 def check_out_vehicle(
     session_id: int,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Check out a vehicle and compute fee (Admin only)."""
     parking_session = (
         db.query(models.ParkingSession)
         .options(joinedload(models.ParkingSession.slot))
@@ -390,8 +456,10 @@ def check_out_vehicle(
 @app.get("/api/sessions", tags=["Parking"])
 def list_sessions(
     session_status: str | None = None,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """List operational parking sessions (Admin only)."""
     query = db.query(models.ParkingSession).options(
         joinedload(models.ParkingSession.vehicle),
         joinedload(models.ParkingSession.slot),
@@ -430,8 +498,17 @@ def list_sessions(
     ]
 
 
+# ---------------------------------------------------------------------------
+# Bookings (Admin operations)
+# ---------------------------------------------------------------------------
+
+
 @app.get("/api/bookings", tags=["Bookings"])
-def list_bookings(db: Session = Depends(get_db)):
+def list_bookings(
+    current_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """List all reservations in the system (Admin only)."""
     bookings = db.query(models.Booking).order_by(
         models.Booking.start_time.desc()
     ).all()
@@ -457,8 +534,10 @@ def list_bookings(db: Session = Depends(get_db)):
 )
 def create_booking(
     data: schemas.BookingCreate,
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Create a reservation from Admin panel (Admin only)."""
     vehicle = db.query(models.Vehicle).filter(
         models.Vehicle.registration_number == data.vehicle_number
     ).first()
@@ -496,6 +575,43 @@ def create_booking(
     }
 
 
+# ---------------------------------------------------------------------------
+# HTML Page Routing
+# ---------------------------------------------------------------------------
+
+
+@app.get("/")
+def home_landing_page():
+    """Visitor landing page."""
+    return FileResponse("frontend/landing.html")
+
+
+@app.get("/login")
+@app.get("/login.html")
+def login_page():
+    return FileResponse("frontend/login.html")
+
+
+@app.get("/signup")
+@app.get("/signup.html")
+def signup_page():
+    return FileResponse("frontend/signup.html")
+
+
+@app.get("/customer")
+@app.get("/customer/{path:path}")
+def customer_page():
+    return FileResponse("frontend/customer.html")
+
+
+@app.get("/admin")
+@app.get("/admin/{path:path}")
+@app.get("/index.html")
+def admin_page():
+    return FileResponse("frontend/index.html")
+
+
+# Mount static files (styles.css, app.js, index.html)
 app.mount(
     "/",
     StaticFiles(directory="frontend", html=True),

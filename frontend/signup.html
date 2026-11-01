@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — ParkWise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            --bg: #f6f7fc;
+            --surface: #fff;
+            --surface2: #f8f8ff;
+            --text: #17172b;
+            --muted: #777b96;
+            --line: #e9e9f4;
+            --navy: #171b3c;
+            --primary: #6254e7;
+            --primary2: #8b5cf6;
+            --shadow: 0 8px 24px rgba(38, 35, 99, .06);
+            --green: #20b978;
+            --red: #ef6377;
+            --amber: #e8a63b;
+        }
+
+        /* ===== Dark Mode ===== */
+        body.dark {
+            --bg: #111326;
+            --surface: #1c1e36;
+            --surface2: #252741;
+            --text: #f3f2ff;
+            --muted: #a4a5c0;
+            --line: #30324f;
+            --shadow: 0 8px 24px #0002;
+        }
+
+        /* ===== Reset & Base ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            font-size: 14px;
+            overflow-x: hidden;
+        }
+
+        /* ===== Animations ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ===== Left Brand Panel ===== */
+        .brand-panel {
+            width: 42%;
+            min-height: 100vh;
+            background: linear-gradient(165deg, #191d43, #25205b 72%, #39246f);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 84, 231, 0.15), transparent 70%);
+            top: -60px;
+            right: -80px;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        .brand-panel::after {
+            content: '';
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.12), transparent 70%);
+            bottom: -40px;
+            left: -60px;
+            animation: pulse 5s ease-in-out infinite 1s;
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        .brand-mark {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #31a5ff, #7454ed);
+            display: grid;
+            place-items: center;
+            font-size: 42px;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 auto 24px;
+            box-shadow: 0 12px 32px rgba(16, 21, 63, 0.5);
+        }
+
+        .brand-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .brand-subtitle {
+            color: #bcbde0;
+            font-size: 14px;
+            margin-bottom: 48px;
+        }
+
+        .brand-tagline {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.4;
+            letter-spacing: -0.3px;
+            margin-bottom: 16px;
+        }
+
+        .brand-desc {
+            color: #9e9fc7;
+            font-size: 14px;
+            line-height: 1.7;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        /* Floating icons */
+        .decor {
+            position: absolute;
+            z-index: 0;
+            opacity: 0.08;
+            font-size: 48px;
+            color: #fff;
+        }
+
+        .decor-1 {
+            top: 15%;
+            left: 12%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .decor-2 {
+            bottom: 20%;
+            right: 10%;
+            animation: float 5s ease-in-out infinite 1.5s;
+            font-size: 36px;
+        }
+
+        /* ===== Right Form Panel ===== */
+        .form-panel {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 480px;
+            animation: fadeInUp 0.7s ease-out;
+            padding: 20px 0;
+        }
+
+        .form-header {
+            margin-bottom: 28px;
+        }
+
+        .form-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* ===== Form Styles ===== */
+        .field {
+            margin-bottom: 16px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .input-wrap input:focus {
+            border-color: #9184ef;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.13);
+        }
+
+        .input-wrap input.error {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(239, 99, 119, 0.1);
+        }
+
+        .input-wrap input::placeholder {
+            color: #b0b3c8;
+        }
+
+        body.dark .input-wrap input::placeholder {
+            color: #6b6d8a;
+        }
+
+        /* Password toggle */
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary);
+        }
+
+        .input-wrap input.has-toggle {
+            padding-right: 46px;
+        }
+
+        /* Error message */
+        .error-msg {
+            display: none;
+            font-size: 11px;
+            color: var(--red);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* Password requirements checklist */
+        .pw-checklist {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .pw-rule {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            transition: color 0.2s;
+        }
+
+        .pw-rule.met {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .pw-rule i {
+            font-style: normal;
+            font-size: 12px;
+        }
+
+        /* Checkbox */
+        .checkbox-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            margin-top: 12px;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-wrap input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid var(--line);
+            border-radius: 5px;
+            background: var(--surface);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox-wrap input[type="checkbox"]:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkbox-wrap input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .checkbox-wrap span {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .checkbox-wrap a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* Submit button */
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(110deg, #6254e7, #8952e8);
+            color: #fff;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(101, 84, 231, 0.3);
+            transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(101, 84, 231, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            filter: none;
+            transform: none;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .submit-btn.loading .btn-text {
+            display: none;
+        }
+
+        .submit-btn.loading .spinner {
+            display: block;
+        }
+
+        /* General API error */
+        .api-error {
+            display: none;
+            background: rgba(239, 99, 119, 0.08);
+            border: 1px solid rgba(239, 99, 119, 0.2);
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .api-error.show {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        /* Footer link */
+        .form-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .form-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.2s;
+        }
+
+        .form-footer a:hover {
+            color: var(--primary2);
+        }
+
+        /* ===== Dark Mode Toggle ===== */
+        .theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: var(--surface2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--muted);
+            transition: all 0.25s;
+            z-index: 5;
+        }
+
+        .theme-toggle:hover {
+            border-color: #9184ef;
+            color: var(--primary);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 960px) {
+            body {
+                flex-direction: column;
+            }
+
+            .brand-panel {
+                width: 100%;
+                min-height: auto;
+                padding: 40px 24px 32px;
+            }
+
+            .brand-tagline {
+                font-size: 18px;
+            }
+
+            .brand-desc, .decor {
+                display: none;
+            }
+
+            .form-panel {
+                padding: 24px 20px 48px;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== Left Brand Panel ===== -->
+    <div class="brand-panel">
+        <div class="decor decor-1">🅿️</div>
+        <div class="decor decor-2">🚗</div>
+
+        <div class="brand-content">
+            <div class="brand-mark">P</div>
+            <div class="brand-title">ParkWise</div>
+            <div class="brand-subtitle">Smart Parking Management</div>
+
+            <div class="brand-tagline">
+                Join ParkWise today.<br>Hassle-free parking awaits.
+            </div>
+            <p class="brand-desc">
+                Create your customer account to easily check live slot availability,
+                reserve slots in advance, and manage your vehicle parking sessions.
+            </p>
+        </div>
+    </div>
+
+    <!-- ===== Right Form Panel ===== -->
+    <div class="form-panel">
+        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
+
+        <div class="form-container">
+            <div class="form-header">
+                <h1>Create an account</h1>
+                <p>Register as a ParkWise customer</p>
+            </div>
+
+            <!-- API Error Banner -->
+            <div class="api-error" id="apiError"></div>
+
+            <form id="signupForm" novalidate>
+                <!-- Full Name -->
+                <div class="field">
+                    <label for="fullName">Full Name</label>
+                    <div class="input-wrap">
+                        <input
+                            type="text"
+                            id="fullName"
+                            name="fullName"
+                            placeholder="John Doe"
+                            autocomplete="name"
+                            required
+                        >
+                    </div>
+                    <div class="error-msg" id="nameError">Please enter a valid full name (letters only)</div>
+                </div>
+
+                <!-- Email -->
+                <div class="field">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrap">
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+                    <div class="error-msg" id="emailError">Please enter a valid email address</div>
+                </div>
+
+                <!-- Phone -->
+                <div class="field">
+                    <label for="phone">Mobile Number</label>
+                    <div class="input-wrap">
+                        <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            placeholder="9876543210 (10 digits)"
+                            autocomplete="tel"
+                            maxlength="10"
+                        >
+                    </div>
+                    <div class="error-msg" id="phoneError">Enter a valid 10-digit Indian mobile number</div>
+                </div>
+
+                <!-- Password -->
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Create a strong password"
+                            class="has-toggle"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="togglePassword"
+                            title="Show password"
+                        >◎</button>
+                    </div>
+                    <div class="error-msg" id="passwordError">Password does not meet requirements</div>
+
+                    <!-- Password rules checklist -->
+                    <div class="pw-checklist">
+                        <div class="pw-rule" id="ruleLength"><i>○</i> 8+ characters</div>
+                        <div class="pw-rule" id="ruleUpper"><i>○</i> 1 uppercase letter</div>
+                        <div class="pw-rule" id="ruleLower"><i>○</i> 1 lowercase letter</div>
+                        <div class="pw-rule" id="ruleNumber"><i>○</i> 1 number</div>
+                        <div class="pw-rule" id="ruleSpecial" style="grid-column: 1 / -1;"><i>○</i> 1 special character (!@#$%^&*...)</div>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="field">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div class="input-wrap">
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            placeholder="Re-enter your password"
+                            class="has-toggle"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="toggleConfirmPassword"
+                            title="Show password"
+                        >◎</button>
+                    </div>
+                    <div class="error-msg" id="confirmError">Passwords do not match</div>
+                </div>
+
+                <!-- Terms and Conditions -->
+                <label class="checkbox-wrap">
+                    <input type="checkbox" id="terms" required>
+                    <span>I agree to the <a href="#" id="termsLink">Terms of Service</a> and <a href="#" id="privacyLink">Privacy Policy</a></span>
+                </label>
+                <div class="error-msg" id="termsError" style="margin-top: -18px; margin-bottom: 18px;">You must agree to the terms to continue</div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span class="btn-text">Create Account</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+
+            <div class="form-footer">
+                Already have an account? <a href="/login.html">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const form = document.getElementById('signupForm');
+        const fullNameInput = document.getElementById('fullName');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const termsInput = document.getElementById('terms');
+        const submitBtn = document.getElementById('submitBtn');
+        const apiError = document.getElementById('apiError');
+
+        const nameError = document.getElementById('nameError');
+        const emailError = document.getElementById('emailError');
+        const phoneError = document.getElementById('phoneError');
+        const passwordError = document.getElementById('passwordError');
+        const confirmError = document.getElementById('confirmError');
+        const termsError = document.getElementById('termsError');
+
+        const togglePassword = document.getElementById('togglePassword');
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Regex patterns
+        const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]{1,99}$/;
+        const PHONE_REGEX = /^[6-9]\d{9}$/;
+
+        // Password rules indicators
+        const ruleLength = document.getElementById('ruleLength');
+        const ruleUpper = document.getElementById('ruleUpper');
+        const ruleLower = document.getElementById('ruleLower');
+        const ruleNumber = document.getElementById('ruleNumber');
+        const ruleSpecial = document.getElementById('ruleSpecial');
+
+        // Theme initialization
+        (function () {
+            const savedTheme = localStorage.getItem('parkwise-theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark');
+                themeToggle.textContent = '☀️';
+            }
+        })();
+
+        themeToggle.addEventListener('click', function () {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('parkwise-theme', isDark ? 'dark' : 'light');
+        });
+
+        // Toggle Password Visibility
+        function setupToggle(button, input) {
+            button.addEventListener('click', function () {
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                button.textContent = isPassword ? '◉' : '◎';
+            });
+        }
+        setupToggle(togglePassword, passwordInput);
+        setupToggle(toggleConfirmPassword, confirmPasswordInput);
+
+        // Terms link alert
+        document.getElementById('termsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('By using ParkWise, you agree to respect facility guidelines and timely slot reservations.');
+        });
+        document.getElementById('privacyLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('ParkWise securely stores your credentials and booking records for facility management only.');
+        });
+
+        // Helpers
+        function showFieldError(input, errorEl, message) {
+            if (input) input.classList.add('error');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        function clearFieldError(input, errorEl) {
+            if (input) input.classList.remove('error');
+            errorEl.classList.remove('show');
+        }
+
+        function updatePasswordRules(val) {
+            const hasLen = val.length >= 8;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNum = /\d/.test(val);
+            const hasSpec = /[!@#$%^&*(),.?":{}|<>]/.test(val);
+
+            setRule(ruleLength, hasLen);
+            setRule(ruleUpper, hasUpper);
+            setRule(ruleLower, hasLower);
+            setRule(ruleNumber, hasNum);
+            setRule(ruleSpecial, hasSpec);
+
+            return hasLen && hasUpper && hasLower && hasNum && hasSpec;
+        }
+
+        function setRule(el, isMet) {
+            if (isMet) {
+                el.classList.add('met');
+                el.querySelector('i').textContent = '✓';
+            } else {
+                el.classList.remove('met');
+                el.querySelector('i').textContent = '○';
+            }
+        }
+
+        passwordInput.addEventListener('input', function () {
+            updatePasswordRules(passwordInput.value);
+            if (passwordInput.classList.contains('error')) {
+                validatePassword();
+            }
+        });
+
+        function validateName() {
+            const val = fullNameInput.value.trim();
+            if (!val || !NAME_REGEX.test(val)) {
+                showFieldError(fullNameInput, nameError, 'Name must contain letters, spaces, or hyphens only (min 2 chars)');
+                return false;
+            }
+            clearFieldError(fullNameInput, nameError);
+            return true;
+        }
+
+        function validateEmail() {
+            const val = emailInput.value.trim();
+            if (!val || !EMAIL_REGEX.test(val)) {
+                showFieldError(emailInput, emailError, 'Please enter a valid email address');
+                return false;
+            }
+            clearFieldError(emailInput, emailError);
+            return true;
+        }
+
+        function validatePhone() {
+            const val = phoneInput.value.trim();
+            if (val && !PHONE_REGEX.test(val)) {
+                showFieldError(phoneInput, phoneError, 'Enter a valid 10-digit Indian mobile number');
+                return false;
+            }
+            clearFieldError(phoneInput, phoneError);
+            return true;
+        }
+
+        function validatePassword() {
+            const val = passwordInput.value;
+            const isValid = updatePasswordRules(val);
+            if (!isValid) {
+                showFieldError(passwordInput, passwordError, 'Password does not meet all complexity requirements');
+                return false;
+            }
+            clearFieldError(passwordInput, passwordError);
+            return true;
+        }
+
+        function validateConfirm() {
+            if (confirmPasswordInput.value !== passwordInput.value) {
+                showFieldError(confirmPasswordInput, confirmError, 'Passwords do not match');
+                return false;
+            }
+            clearFieldError(confirmPasswordInput, confirmError);
+            return true;
+        }
+
+        function validateTerms() {
+            if (!termsInput.checked) {
+                termsError.classList.add('show');
+                return false;
+            }
+            termsError.classList.remove('show');
+            return true;
+        }
+
+        fullNameInput.addEventListener('input', () => { if (fullNameInput.classList.contains('error')) validateName(); });
+        emailInput.addEventListener('input', () => { if (emailInput.classList.contains('error')) validateEmail(); });
+        phoneInput.addEventListener('input', () => { if (phoneInput.classList.contains('error')) validatePhone(); });
+        confirmPasswordInput.addEventListener('input', () => { if (confirmPasswordInput.classList.contains('error')) validateConfirm(); });
+        termsInput.addEventListener('change', validateTerms);
+
+        // Form submit
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            apiError.classList.remove('show');
+
+            const isNameValid = validateName();
+            const isEmailValid = validateEmail();
+            const isPhoneValid = validatePhone();
+            const isPasswordValid = validatePassword();
+            const isConfirmValid = validateConfirm();
+            const isTermsValid = validateTerms();
+
+            if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid || !isConfirmValid || !isTermsValid) {
+                return;
+            }
+
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: fullNameInput.value.trim(),
+                        email: emailInput.value.trim().toLowerCase(),
+                        phone: phoneInput.value.trim(),
+                        password: passwordInput.value,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = data.detail || 'Registration failed. Please check your information.';
+                    apiError.textContent = errorMsg;
+                    apiError.classList.add('show');
+                    return;
+                }
+
+                // Successful registration
+                if (data.access_token) {
+                    localStorage.setItem('access_token', data.access_token);
+                }
+                if (data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
+
+                // Normal registration always creates CUSTOMER accounts -> redirect to /customer
+                window.location.href = '/customer';
+
+            } catch (err) {
+                console.error('Sign up error:', err);
+                apiError.textContent = 'Unable to connect to the server. Please try again.';
+                apiError.classList.add('show');
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+

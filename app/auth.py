@@ -1,12 +1,12 @@
 """Authentication utilities: JWT tokens, password hashing, and FastAPI dependencies."""
 
 import os
+import bcrypt
 from datetime import datetime, timedelta
 
 from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from .database import get_db
@@ -33,17 +33,22 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 # Password hashing
 # ---------------------------------------------------------------------------
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Return *True* if *plain_password* matches *hashed_password*."""
-    return _pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except Exception:
+        return False
 
 
 def hash_password(password: str) -> str:
     """Return the bcrypt hash of *password*."""
-    return _pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 
 # ---------------------------------------------------------------------------

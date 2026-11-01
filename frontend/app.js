@@ -1,16 +1,44 @@
 const API = "/api";
 
 let currentPage = "dashboard";
-
 let slotsCache = [];
-
 let sessionsCache = [];
 
 const $ = (s) => document.querySelector(s);
 const money = (n) => "₹" + Number(n || 0).toLocaleString("en-IN", {maximumFractionDigits:2});
+
 async function request(path, options={}) {
-  const res = await fetch(API + path, {headers:{"Content-Type":"application/json"}, ...options});
-  if (!res.ok) { let msg = "Something went wrong."; try { const d=await res.json(); msg=d.detail || msg; } catch{} throw new Error(msg); }
+  const token = localStorage.getItem("access_token");
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(options.headers || {})
+  };
+
+  const res = await fetch(API + path, { ...options, headers });
+
+  if (res.status === 401) {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
+    window.location.href = "/login.html";
+    return null;
+  }
+
+  if (res.status === 403) {
+    // If forbidden, user may be a customer trying to access admin
+    window.location.href = "/customer";
+    return null;
+  }
+
+  if (!res.ok) {
+    let msg = "Something went wrong.";
+    try {
+      const d = await res.json();
+      msg = d.detail || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+
   if (res.status === 204) return null;
   return res.json();
 }
@@ -118,6 +146,52 @@ $("#primaryAction").onclick=()=>({dashboard:()=>openVehicleModal(),vehicles:()=>
 $("#closeModal").onclick=$("#cancelModal").onclick=()=>$("#modal").classList.remove("show");
 $("#themeToggle").onclick=()=>{document.body.classList.toggle("dark");localStorage.setItem("parkwise-theme",document.body.classList.contains("dark")?"dark":"light")};
 if(localStorage.getItem("parkwise-theme")==="dark")document.body.classList.add("dark");
+
+const logoutBtn = $("#logoutBtn");
+if (logoutBtn) {
+  logoutBtn.onclick = async () => {
+    try {
+      await fetch(API + "/auth/logout", { method: "POST" });
+    } catch {}
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
+    window.location.href = "/login.html";
+  };
+}
+
 document.querySelectorAll(".nav-item[data-page]").forEach(b=>b.addEventListener("click",()=>setPage(b.dataset.page)));
-async function init(){try{await request("/health");setPage("dashboard");}catch(e){const root=$("#pageContent");root.innerHTML=`<div class="panel empty">Could not connect to the ParkWise API: ${escapeHtml(e.message)}<br><br>Check that the FastAPI server is running from the ParkWise project folder, then refresh this page.</div>`;toast("API connection failed.")}}
+
+async function init(){
+  const token = localStorage.getItem("access_token");
+  if (!token) {
+    window.location.href = "/login.html";
+    return;
+  }
+
+  try{
+    const me = await request("/auth/me");
+    if (!me) return;
+
+    if (me.role !== "ADMIN") {
+      // Normal customers must never access admin panel
+      window.location.href = "/customer";
+      return;
+    }
+
+    const nameEl = $("#adminName");
+    const avatarEl = $("#adminAvatar");
+    if (nameEl && me.full_name) nameEl.textContent = me.full_name;
+    if (avatarEl && me.full_name) avatarEl.textContent = me.full_name.charAt(0).toUpperCase();
+
+    setPage("dashboard");
+  }catch(e){
+    if (e.message && e.message.includes("401")) {
+      window.location.href = "/login.html";
+      return;
+    }
+    const root=$("#pageContent");
+    root.innerHTML=`<div class="panel empty">Could not connect to the ParkWise API: ${escapeHtml(e.message)}<br><br>Check that the FastAPI server is running, then refresh this page.</div>`;
+    toast("API connection failed.");
+  }
+}
 init();

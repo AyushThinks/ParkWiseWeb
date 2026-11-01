@@ -2,7 +2,7 @@
 
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
@@ -40,3 +40,29 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def run_migrations():
+    """Ensure newly added columns exist in older database files."""
+    try:
+        with engine.connect() as conn:
+            inspector = inspect(conn)
+            tables = inspector.get_table_names()
+
+            if "vehicles" in tables:
+                columns = [c["name"] for c in inspector.get_columns("vehicles")]
+                if "user_id" not in columns:
+                    conn.execute(
+                        text("ALTER TABLE vehicles ADD COLUMN user_id INTEGER")
+                    )
+                    conn.commit()
+
+            if "bookings" in tables:
+                columns = [c["name"] for c in inspector.get_columns("bookings")]
+                if "user_id" not in columns:
+                    conn.execute(
+                        text("ALTER TABLE bookings ADD COLUMN user_id INTEGER")
+                    )
+                    conn.commit()
+    except Exception as exc:
+        print(f"Migration note: {exc}")

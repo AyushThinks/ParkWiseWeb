@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkWise — Smart Parking Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f6f7fc;
+            --surface: #fff;
+            --surface2: #f8f8ff;
+            --text: #17172b;
+            --muted: #777b96;
+            --line: #e9e9f4;
+            --navy: #171b3c;
+            --primary: #6254e7;
+            --primary2: #8b5cf6;
+            --shadow: 0 8px 24px rgba(38, 35, 99, .06);
+            --green: #20b978;
+            --red: #ef6377;
+            --amber: #e8a63b;
+        }
+
+        body.dark {
+            --bg: #111326;
+            --surface: #1c1e36;
+            --surface2: #252741;
+            --text: #f3f2ff;
+            --muted: #a4a5c0;
+            --line: #30324f;
+            --shadow: 0 8px 24px #0002;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            height: 76px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 48px;
+        }
+
+        body.dark .navbar {
+            background: rgba(28, 30, 54, 0.85);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #31a5ff, #7454ed);
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(49, 165, 255, 0.3);
+        }
+
+        .brand-text b {
+            display: block;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-text small {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: -2px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .theme-btn {
+            background: var(--surface2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--muted);
+            transition: all 0.2s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--line);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(110deg, #6254e7, #8952e8);
+            border: none;
+            color: #fff;
+            padding: 11px 22px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            box-shadow: 0 6px 16px rgba(98, 84, 231, 0.3);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 80px 24px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            background: var(--surface2);
+            border: 1px solid var(--line);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1.2px;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(110deg, #6254e7, #8952e8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 18px;
+            max-width: 620px;
+            margin: 0 auto 36px;
+        }
+
+        .hero-cta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Dual Portal Cards */
+        .portals-section {
+            padding: 40px 24px 80px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-header h2 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .section-header p {
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .portals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+
+        .portal-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 36px 32px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 36px rgba(38, 35, 99, 0.1);
+            border-color: #c4b5fd;
+        }
+
+        .portal-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            font-size: 26px;
+            margin-bottom: 22px;
+        }
+
+        .portal-card.customer .portal-icon {
+            background: #eef2ff;
+            color: #6366f1;
+        }
+
+        .portal-card.admin .portal-icon {
+            background: #fdf2f8;
+            color: #ec4899;
+        }
+
+        .portal-card h3 {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: -0.3px;
+        }
+
+        .portal-card p {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            flex: 1;
+        }
+
+        .portal-features {
+            list-style: none;
+            display: grid;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .portal-features li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .portal-features li span {
+            color: var(--green);
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        /* Features strip */
+        .features-strip {
+            background: var(--surface);
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            padding: 60px 24px;
+        }
+
+        .features-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .feature-item {
+            text-align: left;
+        }
+
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 14px;
+            display: inline-block;
+        }
+
+        .feature-item h4 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feature-item p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 860px) {
+            .navbar {
+                padding: 0 20px;
+            }
+            .hero h1 {
+                font-size: 34px;
+            }
+            .portals-grid,
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="brand">
+            <div class="brand-mark">P</div>
+            <div class="brand-text">
+                <b>ParkWise</b>
+                <small>Smart Parking</small>
+            </div>
+        </a>
+
+        <div class="nav-actions">
+            <button class="theme-btn" id="themeToggle" title="Toggle theme">🌙</button>
+            <a href="/login.html" class="btn-outline">Sign In</a>
+            <a href="/signup.html" class="btn-primary">Create Account</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-badge">
+                ✦ Smart Facility & Customer Parking Solution
+            </div>
+            <h1>Next-Generation Parking Management, <span>Built for Everyone</span></h1>
+            <p>
+                ParkWise bridges the gap between drivers and parking facilities.
+                Real-time slot availability, instant online reservations, and automated check-ins in one unified system.
+            </p>
+            <div class="hero-cta">
+                <a href="/signup.html" class="btn-primary" style="padding: 13px 28px; font-size: 15px;">
+                    Get Started as Customer →
+                </a>
+                <a href="/login.html" class="btn-outline" style="padding: 13px 26px; font-size: 15px;">
+                    Sign In to Portal
+                </a>
+            </div>
+        </section>
+
+        <section class="portals-section">
+            <div class="section-header">
+                <h2>Choose Your Experience</h2>
+                <p>ParkWise offers tailored portals designed specifically for customers and facility managers.</p>
+            </div>
+
+            <div class="portals-grid">
+                <!-- Customer Portal -->
+                <div class="portal-card customer">
+                    <div class="portal-icon">🚗</div>
+                    <h3>Customer Portal</h3>
+                    <p>Designed for vehicle owners. Check available car & bike slots in real-time, reserve in advance, and manage your bookings effortlessly.</p>
+                    <ul class="portal-features">
+                        <li><span>✓</span> Live car & bike slot availability</li>
+                        <li><span>✓</span> Reserve slots in advance without wait</li>
+                        <li><span>✓</span> Manage and cancel active reservations</li>
+                        <li><span>✓</span> Track your parking history and profile</li>
+                    </ul>
+                    <a href="/signup.html" class="btn-primary" style="text-align: center;">Customer Sign Up / Login</a>
+                </div>
+
+                <!-- Admin Portal -->
+                <div class="portal-card admin">
+                    <div class="portal-icon">🏢</div>
+                    <h3>Facility Admin Portal</h3>
+                    <p>Complete control for parking facility operators. Monitor real-time occupancy, manage slots, check-in vehicles, and calculate parking fees.</p>
+                    <ul class="portal-features">
+                        <li><span>✓</span> Real-time facility occupancy metrics</li>
+                        <li><span>✓</span> Vehicle registration and slot management</li>
+                        <li><span>✓</span> Fast entry & exit check-in operations</li>
+                        <li><span>✓</span> Automated fee calculation & CSV reports</li>
+                    </ul>
+                    <a href="/login.html" class="btn-outline" style="text-align: center;">Administrator Login</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-strip">
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Instant Availability</h4>
+                    <p>See occupied and open slots in real time across Block A and other zones. Never circle the lot looking for parking again.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🛡️</div>
+                    <h4>Role-Based Security</h4>
+                    <p>Rigorous JWT token authentication, bcrypt password hashing, and strict role segregation between customers and administrators.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⏱️</div>
+                    <h4>Double-Booking Prevention</h4>
+                    <p>Intelligent backend time-overlap detection guarantees that a slot is never reserved twice for the same window.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 ParkWise Smart Parking Management System. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+
+        if (localStorage.getItem('parkwise-theme') === 'dark') {
+            document.body.classList.add('dark');
+            themeToggle.textContent = '☀️';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('parkwise-theme', isDark ? 'dark' : 'light');
+        });
+
+        // If user already has an active session, update header link
+        const token = localStorage.getItem('access_token');
+        const userStr = localStorage.getItem('user');
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                const target = user.role === 'ADMIN' ? '/index.html' : '/customer';
+                const actions = document.querySelector('.nav-actions');
+                actions.innerHTML = `
+                    <button class="theme-btn" id="themeToggle2" title="Toggle theme">${document.body.classList.contains('dark') ? '☀️' : '🌙'}</button>
+                    <a href="${target}" class="btn-primary">Go to Dashboard (${user.role}) →</a>
+                `;
+                document.getElementById('themeToggle2').addEventListener('click', () => {
+                    document.body.classList.toggle('dark');
+                    const isDark = document.body.classList.contains('dark');
+                    localStorage.setItem('parkwise-theme', isDark ? 'dark' : 'light');
+                });
+            } catch {}
+        }
+    </script>
+</body>
+</html>
+
